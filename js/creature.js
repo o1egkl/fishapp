@@ -1,0 +1,1228 @@
+/**
+ * AquaGenesis Creature Engine - Реалистичная ихтиология
+ * Реальные виды рыб:
+ * 1. Неоновая Тетра (Paracheirodon innesi) - Малёк
+ * 2. Рыба-Клоун Оцеллярис (Amphiprion ocellatus)
+ * 3. Голубой Хирург / Дори (Paracanthurus hepatus)
+ * 4. Желтая Зебрасома (Zebrasoma flavescens)
+ * 5. Крылатка-Зебра (Pterois volitans)
+ * 6. Большая Барракуда (Sphyraena barracuda)
+ * 7. Большая Белая Акула (Carcharodon carcharias)
+ */
+
+// Стадии эволюции игрока на основе реальных рыб
+const EVOLUTION_STAGES = [
+  {
+    stage: 1,
+    species: 'neontetra',
+    name: 'Неоновая Тетра (Малёк)',
+    latin: 'Paracheirodon innesi',
+    icon: '🐟',
+    minMass: 10,
+    targetMass: 100,
+    baseRadius: 32,
+    speed: 0.85,
+    dashSpeed: 1.75,
+    lengthCm: '4 - 12 см',
+    desc: 'Крошечная юркая тетра со светящейся неоновой полосой и алым хвостом. Питайтесь планктоном!'
+  },
+  {
+    stage: 2,
+    species: 'clownfish',
+    name: 'Рыба-Клоун (Оцеллярис)',
+    latin: 'Amphiprion ocellatus',
+    icon: '🐠',
+    minMass: 100,
+    targetMass: 450,
+    baseRadius: 50,
+    speed: 0.98,
+    dashSpeed: 2.0,
+    lengthCm: '15 - 35 см',
+    desc: 'Яркая рифовая рыба с 3 белоснежными полосами и черной каймой плавников. Охотьтесь на моллюсков!'
+  },
+  {
+    stage: 3,
+    species: 'barracuda',
+    name: 'Большая Барракуда',
+    latin: 'Sphyraena barracuda',
+    icon: '🦈',
+    minMass: 450,
+    targetMass: 1800,
+    baseRadius: 82,
+    speed: 1.15,
+    dashSpeed: 2.3,
+    lengthCm: '70 - 150 см',
+    desc: 'Стреловидный хищник с выступающей нижней челюстью, кинжальными зубами и тигриными полосами!'
+  },
+  {
+    stage: 4,
+    species: 'shark',
+    name: 'Большая Белая Акула',
+    latin: 'Carcharodon carcharias',
+    icon: '🦈',
+    minMass: 1800,
+    targetMass: 5000,
+    baseRadius: 125,
+    speed: 1.35,
+    dashSpeed: 2.6,
+    lengthCm: '3 - 6 метров',
+    desc: 'Вершинный сверххищник мирового океана: 5 жаберных щелей, серповидный хвост и ряды смертоносных зубов!'
+  }
+];
+
+// Пресеты реальных видов для экосистемы
+const REAL_SPECIES_PRESETS = {
+  neontetra: {
+    species: 'neontetra',
+    name: 'Неоновая Тетра',
+    stage: 1,
+    baseRadius: 28,
+    speed: 0.82,
+    dashSpeed: 1.7,
+    numSegments: 7,
+    color: '#00e5ff'
+  },
+  clownfish: {
+    species: 'clownfish',
+    name: 'Рыба-Клоун',
+    stage: 2,
+    baseRadius: 48,
+    speed: 0.92,
+    dashSpeed: 1.9,
+    numSegments: 8,
+    color: '#ff6d00'
+  },
+  bluetang: {
+    species: 'bluetang',
+    name: 'Голубой Хирург (Дори)',
+    stage: 2,
+    baseRadius: 50,
+    speed: 0.96,
+    dashSpeed: 1.95,
+    numSegments: 8,
+    color: '#2979ff'
+  },
+  yellowtang: {
+    species: 'yellowtang',
+    name: 'Желтая Зебрасома',
+    stage: 2,
+    baseRadius: 48,
+    speed: 0.94,
+    dashSpeed: 1.9,
+    numSegments: 8,
+    color: '#ffd600'
+  },
+  lionfish: {
+    species: 'lionfish',
+    name: 'Крылатка-Зебра',
+    stage: 3,
+    baseRadius: 64,
+    speed: 1.0,
+    dashSpeed: 2.05,
+    numSegments: 8,
+    color: '#d84315'
+  },
+  barracuda: {
+    species: 'barracuda',
+    name: 'Большая Барракуда',
+    stage: 3,
+    baseRadius: 82,
+    speed: 1.15,
+    dashSpeed: 2.3,
+    numSegments: 9,
+    color: '#90a4ae'
+  },
+  shark: {
+    species: 'shark',
+    name: 'Большая Белая Акула',
+    stage: 4,
+    baseRadius: 125,
+    speed: 1.3,
+    dashSpeed: 2.6,
+    numSegments: 10,
+    color: '#546e7a'
+  }
+};
+
+class Fish {
+  constructor(x, y, options = {}) {
+    this.x = x;
+    this.y = y;
+    this.vx = 0;
+    this.vy = 0;
+    this.angle = options.angle || Math.random() * Math.PI * 2;
+    this.targetAngle = this.angle;
+
+    this.isPlayer = options.isPlayer || false;
+    this.stage = options.stage || 1;
+    this.species = options.species || (this.isPlayer ? EVOLUTION_STAGES[this.stage - 1].species : 'neontetra');
+
+    const defaultColor = (REAL_SPECIES_PRESETS[this.species] && REAL_SPECIES_PRESETS[this.species].color) || '#00e5ff';
+    this.colors = options.colors || { body: defaultColor };
+
+    this.mass = options.mass || (this.stage === 1 ? 15 : this.stage === 2 ? 150 : this.stage === 3 ? 600 : 2500);
+    this.radius = options.radius || (this.stage === 1 ? 32 : this.stage === 2 ? 50 : this.stage === 3 ? 82 : 125);
+    this.maxSpeed = options.maxSpeed || 0.85;
+    this.dashSpeed = options.dashSpeed || 1.75;
+    this.turnSpeed = options.turnSpeed || 0.065;
+
+    // Процедурный скелет (сегменты позвоночника)
+    this.numSegments = options.numSegments || (this.species === 'shark' ? 10 : this.species === 'barracuda' ? 9 : 8);
+    this.segments = [];
+    for (let i = 0; i < this.numSegments; i++) {
+      this.segments.push({
+        x: this.x - Math.cos(this.angle) * i * (this.radius * 0.45),
+        y: this.y - Math.sin(this.angle) * i * (this.radius * 0.45),
+        angle: this.angle
+      });
+    }
+
+    // Анимация плавников и хвоста
+    this.tailPhase = Math.random() * Math.PI * 2;
+    this.finCycle = 0;
+    this.mouthOpen = 0;
+    this.chompTimer = 0;
+
+    // Рывок / Ускорение
+    this.isDashing = false;
+    this.dashEnergy = 100;
+    this.maxDashEnergy = 100;
+
+    // ИИ параметры для NPC
+    this.aiState = 'WANDER';
+    this.aiChangeTimer = Math.random() * 90 + 60;
+    this.wanderAngle = this.angle;
+
+    // Эффекты и щит неуязвимости
+    this.hurtTimer = 0;
+    this.evolutionGlow = 0;
+    this.shieldTimer = options.shieldTimer || 0;
+    this.pulseAnim = 0;
+    this.lives = options.lives !== undefined ? options.lives : (this.isPlayer ? 3 : 1);
+    this.maxLives = 3;
+
+    // Плавный 3D-разворот влево/вправо без переворачивания кверху брюхом
+    this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
+    this.smoothFacing = this.facing;
+    this.pitch = Math.atan2(Math.sin(this.angle), Math.abs(Math.cos(this.angle)));
+  }
+
+  update(worldWidth, worldHeight, player, otherFish, foods, speedMult = 1) {
+    if (this.isPlayer) {
+      this.updatePlayer();
+    } else {
+      this.updateAI(player, otherFish, foods);
+    }
+
+    // Обновляем радиус в зависимости от массы (увеличенный масштаб ~1.85x)
+    const targetRadius = Math.max(24, Math.pow(this.mass, 0.48) * 7.6);
+    this.radius += (targetRadius - this.radius) * 0.05;
+
+    // Физика движения с учетом множителя скорости
+    const speed = Math.hypot(this.vx, this.vy);
+    this.x += this.vx * speedMult;
+    this.y += this.vy * speedMult;
+
+    // Плавное гидродинамическое сопротивление воды
+    const friction = this.isDashing ? 0.94 : 0.91;
+    this.vx *= friction;
+    this.vy *= friction;
+
+    // Ограничение по границам мира с мягким отталкиванием
+    const pad = this.radius * 2;
+    if (this.x < pad) { this.x = pad; this.vx = Math.abs(this.vx) * 0.4; }
+    if (this.x > worldWidth - pad) { this.x = worldWidth - pad; this.vx = -Math.abs(this.vx) * 0.4; }
+    if (this.y < pad) { this.y = pad; this.vy = Math.abs(this.vy) * 0.4; }
+    if (this.y > worldHeight - pad) { this.y = worldHeight - pad; this.vy = -Math.abs(this.vy) * 0.4; }
+
+    // Плавный неторопливый поворот
+    let diff = this.targetAngle - this.angle;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    this.angle += diff * this.turnSpeed;
+
+    // Плавное отслеживание направления и наклона рыбы без переворачивания
+    const cosA = Math.cos(this.angle);
+    const sinA = Math.sin(this.angle);
+
+    // Гистерезис (зона нечувствительности +/- 0.12), чтобы избежать дребезга при вертикальном плавании
+    if (cosA > 0.12) {
+      this.facing = 1;
+    } else if (cosA < -0.12) {
+      this.facing = -1;
+    }
+
+    // Плавный поворот тела в 3D
+    this.smoothFacing += (this.facing - this.smoothFacing) * 0.15;
+
+    // Плавный наклон носа вверх/вниз
+    const targetPitch = Math.atan2(sinA, Math.abs(cosA));
+    this.pitch += (targetPitch - this.pitch) * 0.18;
+
+    // Спокойные, реалистичные колебания хвоста
+    const swimFreq = (0.04 + speed * 0.035) * speedMult;
+    this.tailPhase += swimFreq;
+    this.finCycle += swimFreq * 1.1;
+    this.pulseAnim += 0.05 * speedMult;
+
+    // Голова рыбы ведет за собой позвоночник
+    this.segments[0].x = this.x;
+    this.segments[0].y = this.y;
+    this.segments[0].angle = this.angle;
+
+    const segmentDist = this.radius * 0.42;
+    for (let i = 1; i < this.numSegments; i++) {
+      const prev = this.segments[i - 1];
+      const cur = this.segments[i];
+
+      const dx = cur.x - prev.x;
+      const dy = cur.y - prev.y;
+      const curAngle = Math.atan2(dy, dx);
+
+      // Плавное синусоидальное колебание хвоста
+      const wave = Math.sin(this.tailPhase - i * 0.55) * (i * 0.065) * (speed + 0.6);
+      const targetSegAngle = curAngle + wave * 0.12;
+
+      cur.x = prev.x + Math.cos(targetSegAngle) * segmentDist;
+      cur.y = prev.y + Math.sin(targetSegAngle) * segmentDist;
+      cur.angle = targetSegAngle;
+    }
+
+    if (this.chompTimer > 0) {
+      this.chompTimer--;
+      this.mouthOpen = Math.sin((this.chompTimer / 12) * Math.PI);
+    } else {
+      this.mouthOpen = 0;
+    }
+
+    if (this.hurtTimer > 0) this.hurtTimer--;
+    if (this.evolutionGlow > 0) this.evolutionGlow -= 0.02;
+    if (this.shieldTimer > 0) this.shieldTimer--;
+
+    // Регенерация энергии рывка для игрока
+    if (this.isPlayer) {
+      if (this.isDashing) {
+        this.dashEnergy = Math.max(0, this.dashEnergy - 0.9);
+        if (this.dashEnergy <= 0) {
+          this.isDashing = false;
+        }
+      } else {
+        this.dashEnergy = Math.min(this.maxDashEnergy, this.dashEnergy + 0.35);
+      }
+    }
+  }
+
+  updatePlayer() {
+    const curSpeed = this.isDashing ? this.dashSpeed : this.maxSpeed;
+    this.vx += Math.cos(this.targetAngle) * (curSpeed * 0.09);
+    this.vy += Math.sin(this.targetAngle) * (curSpeed * 0.09);
+  }
+
+  updateAI(player, otherFish, foods) {
+    this.aiChangeTimer--;
+
+    const distToPlayer = Math.hypot(this.x - player.x, this.y - player.y);
+    const sightRange = this.radius * 5.0;
+
+    let wantsToFlee = false;
+    let fleeX = 0;
+    let fleeY = 0;
+
+    if (distToPlayer < sightRange && player.radius > this.radius * 1.15) {
+      wantsToFlee = true;
+      fleeX = this.x - player.x;
+      fleeY = this.y - player.y;
+    }
+
+    if (wantsToFlee) {
+      this.aiState = 'FLEE';
+      this.targetAngle = Math.atan2(fleeY, fleeX);
+      const fleeSpeed = this.maxSpeed * 0.85;
+      this.vx += Math.cos(this.targetAngle) * (fleeSpeed * 0.04);
+      this.vy += Math.sin(this.targetAngle) * (fleeSpeed * 0.04);
+      return;
+    }
+
+    // Охота хищников: ТОЛЬКО настоящие хищные виды (барракуда, акула, крылатка) или гиганты 3-4 стадий охотятся на игрока!
+    // Мирные рифовые рыбки (тетра, клоун, хирург, зебрасома) не нападают на игрока!
+    const isPredatoryCarnivore = ['barracuda', 'shark', 'lionfish'].includes(this.species) || this.stage >= 3;
+    if (isPredatoryCarnivore && distToPlayer < sightRange * 0.85 && this.radius > player.radius * 1.25 && (!player.shieldTimer || player.shieldTimer <= 0)) {
+      this.aiState = 'CHASE';
+      this.targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+      const huntSpeed = this.maxSpeed * 0.75;
+      this.vx += Math.cos(this.targetAngle) * (huntSpeed * 0.035);
+      this.vy += Math.sin(this.targetAngle) * (huntSpeed * 0.035);
+      return;
+    }
+
+    if (this.aiChangeTimer <= 0) {
+      this.aiChangeTimer = 90 + Math.random() * 120;
+      this.wanderAngle += (Math.random() - 0.5) * 1.2;
+    }
+
+    this.targetAngle = this.wanderAngle;
+    const wanderSpeed = this.maxSpeed * 0.45;
+    this.vx += Math.cos(this.targetAngle) * (wanderSpeed * 0.025);
+    this.vy += Math.sin(this.targetAngle) * (wanderSpeed * 0.025);
+  }
+
+  triggerChomp() {
+    this.chompTimer = 14;
+  }
+
+  // ГЛАВНЫЙ МЕТОД ОТРИСОВКИ РЕАЛИСТИЧНОЙ РЫБЫ
+  draw(ctx, theme = 'day') {
+    ctx.save();
+
+    // Маркер игрока и защитный щит
+    if (this.isPlayer) {
+      this.drawPlayerIndicators(ctx, theme);
+    }
+
+    // Если загружен реальный фотографический спрайт — используем фотореалистичный рендерер с живым изгибом тела!
+    let drawn = false;
+    if (window.assetManager) {
+      drawn = window.assetManager.drawFish(
+        ctx,
+        this.species,
+        this.x,
+        this.y,
+        this.radius,
+        this.angle,
+        this.tailPhase,
+        this.isDashing,
+        theme,
+        this.smoothFacing,
+        this.pitch
+      );
+    }
+
+    // Резервная отрисовка процедурной модели, пока текстуры загружаются
+    if (!drawn) {
+      switch (this.species) {
+        case 'clownfish':
+          this.drawClownfish(ctx, theme);
+          break;
+        case 'bluetang':
+          this.drawBlueTang(ctx, theme);
+          break;
+        case 'yellowtang':
+          this.drawYellowTang(ctx, theme);
+          break;
+        case 'barracuda':
+          this.drawBarracuda(ctx, theme);
+          break;
+        case 'shark':
+          this.drawShark(ctx, theme);
+          break;
+        case 'lionfish':
+          this.drawLionfish(ctx, theme);
+          break;
+        case 'neontetra':
+        default:
+          this.drawNeonTetra(ctx, theme);
+          break;
+      }
+    }
+
+    ctx.restore();
+  }
+
+  drawPlayerIndicators(ctx, theme) {
+    const r = this.radius;
+    const pulse = Math.sin(this.pulseAnim) * 4;
+
+    ctx.save();
+    // Ореол под игроком
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r * 1.5 + pulse, 0, Math.PI * 2);
+    ctx.strokeStyle = theme === 'neon' ? 'rgba(0, 255, 204, 0.6)' : 'rgba(0, 210, 255, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+
+    // Вспышка урона при укусе
+    if (this.hurtTimer > 0) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 1.5 + Math.sin(this.hurtTimer * 0.8) * 6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 30, 60, ${Math.min(0.55, this.hurtTimer / 30)})`;
+      ctx.fill();
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // Щит неуязвимости
+    if (this.shieldTimer > 0) {
+      const shieldSec = Math.ceil(this.shieldTimer / 60);
+      const shieldRadius = r * 1.8 + pulse * 1.5;
+
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, shieldRadius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 229, 255, 0.18)';
+      ctx.fill();
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#00e5ff';
+      ctx.stroke();
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = '#000000';
+      ctx.fillText(`🛡️ ЩИТ (${shieldSec}с)`, this.x, this.y - shieldRadius - 8);
+    } else {
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = theme === 'neon' ? '#00ffcc' : '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#000000';
+      ctx.fillText('ВЫ 🐟', this.x, this.y - r * 1.5 - 6);
+    }
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // 1. НЕОНОВАЯ ТЕТРА (Paracheirodon innesi) - Стадия 1
+  // Стеклянное тельце, неоновая бирюзовая полоса и алый хвост
+  // =========================================================================
+  drawNeonTetra(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Хвостовой плавник (раздвоенный, полупрозрачный)
+    const tailSeg = segs[n - 1];
+    ctx.save();
+    ctx.translate(tailSeg.x, tailSeg.y);
+    ctx.rotate(tailSeg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-r * 0.9, -r * 0.65);
+    ctx.lineTo(-r * 0.6, 0);
+    ctx.lineTo(-r * 0.9, r * 0.65);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.stroke();
+    ctx.restore();
+
+    // Тело тетры
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      return Math.sin(t * Math.PI) * (r * 0.75);
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x + Math.cos(segs[0].angle) * (r * 0.8), segs[0].y + Math.sin(segs[0].angle) * (r * 0.8));
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    // Серебристо-оливковая основа тела
+    const grad = ctx.createLinearGradient(left[1].x, left[1].y, right[1].x, right[1].y);
+    grad.addColorStop(0, '#102a43');
+    grad.addColorStop(0.5, '#243b53');
+    grad.addColorStop(1, '#829ab1');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Алое пятно на задней половине тела
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(segs[Math.floor(n * 0.4)].x, segs[Math.floor(n * 0.4)].y);
+    for (let i = Math.floor(n * 0.4); i < right.length; i++) ctx.lineTo(right[i].x, right[i].y);
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    ctx.closePath();
+    ctx.fillStyle = '#ff1744';
+    ctx.fill();
+    ctx.restore();
+
+    // Знаменитая светящаяся неоново-бирюзовая полоса
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x, segs[0].y);
+    for (let i = 1; i < n - 2; i++) {
+      const seg = segs[i];
+      const norm = seg.angle + Math.PI / 2;
+      ctx.lineTo(seg.x + Math.cos(norm) * (r * 0.25), seg.y + Math.sin(norm) * (r * 0.25));
+    }
+    ctx.strokeStyle = '#00e5ff';
+    ctx.lineWidth = Math.max(2.5, r * 0.18);
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#00e5ff';
+    ctx.stroke();
+    ctx.restore();
+
+    // Глаз тетры с бирюзовым ободком
+    this.drawRealisticEye(ctx, segs[0], r * 0.24, '#00e5ff');
+  }
+
+  // =========================================================================
+  // 2. РЫБА-КЛОУН (Amphiprion ocellatus) - Стадия 2
+  // Сочный оранжевый цвет, 3 белые полосы с черной каймой, круглые плавники
+  // =========================================================================
+  drawClownfish(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Округлый веерообразный хвост с черной каймой
+    const tailSeg = segs[n - 1];
+    ctx.save();
+    ctx.translate(tailSeg.x, tailSeg.y);
+    ctx.rotate(tailSeg.angle);
+    ctx.beginPath();
+    ctx.arc(-r * 0.4, 0, r * 0.65, -Math.PI * 0.45, Math.PI * 0.45);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#ff6d00';
+    ctx.fill();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = Math.max(2, r * 0.08);
+    ctx.stroke();
+    // Белая окантовка края
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // Спинной закругленный плавник
+    this.drawCurvedFin(ctx, segs[2], -1, r * 0.9, r * 0.5, '#ff6d00');
+
+    // Профиль тела клоуна (пузатенькое овальное)
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      if (i === 0) return r * 0.65;
+      if (i <= 2) return r * 0.98; // пузико
+      return Math.sin(t * Math.PI) * (r * 0.95);
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x + Math.cos(segs[0].angle) * (r * 0.85), segs[0].y + Math.sin(segs[0].angle) * (r * 0.85));
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    // Насыщенный мандариновый цвет тела
+    const grad = ctx.createLinearGradient(left[1].x, left[1].y, right[1].x, right[1].y);
+    grad.addColorStop(0, '#e65100');
+    grad.addColorStop(0.5, '#ff6d00');
+    grad.addColorStop(1, '#ff9e40');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 3 НАСТОЯЩИХ БЕЛЫХ ПОЛОСЫ С ЧЕРНОЙ КАЙМОЙ:
+    // Полоса 1: за глазом (голова)
+    this.drawClownStripe(ctx, segs[1], r * 0.95, false);
+    // Полоса 2: в центре тела с треугольным выступом
+    this.drawClownStripe(ctx, segs[3], r * 0.9, true);
+    // Полоса 3: на хвостовом стебле
+    this.drawClownStripe(ctx, segs[n - 2], r * 0.45, false);
+
+    // Грудные круглые плавники с черной каймой
+    this.drawPectoralFinsBordered(ctx, segs[1], r * 0.65, '#ff6d00');
+
+    // Глаз клоуна (оранжевый с бликом)
+    this.drawRealisticEye(ctx, segs[0], r * 0.22, '#ff9800');
+  }
+
+  drawClownStripe(ctx, seg, width, hasBulge) {
+    ctx.save();
+    ctx.translate(seg.x, seg.y);
+    ctx.rotate(seg.angle);
+
+    ctx.beginPath();
+    if (hasBulge) {
+      // Центральная полоса с выступом вперед
+      ctx.moveTo(-width * 0.2, -width);
+      ctx.lineTo(width * 0.35, 0); // выступ
+      ctx.lineTo(-width * 0.2, width);
+      ctx.lineTo(width * 0.2, width);
+      ctx.lineTo(width * 0.55, 0);
+      ctx.lineTo(width * 0.2, -width);
+    } else {
+      ctx.rect(-width * 0.2, -width, width * 0.4, width * 2);
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // 3. ГОЛУБОЙ ХИРУРГ / ДОРИ (Paracanthurus hepatus)
+  // Королевский синий, черная палитра на боку, желтый треугольный хвост
+  // =========================================================================
+  drawBlueTang(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Желтый треугольный хвост с черными краями
+    const tailSeg = segs[n - 1];
+    ctx.save();
+    ctx.translate(tailSeg.x, tailSeg.y);
+    ctx.rotate(tailSeg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-r * 0.95, -r * 0.75);
+    ctx.lineTo(-r * 0.65, 0);
+    ctx.lineTo(-r * 0.95, r * 0.75);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd600'; // Ярко-желтый хвост
+    ctx.fill();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Профиль плоского тела хирурга
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      return Math.sin(t * Math.PI) * (r * 0.95);
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x + Math.cos(segs[0].angle) * (r * 0.8), segs[0].y + Math.sin(segs[0].angle) * (r * 0.8));
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    // Глубокий королевский кобальтово-синий цвет
+    const grad = ctx.createLinearGradient(left[1].x, left[1].y, right[1].x, right[1].y);
+    grad.addColorStop(0, '#0d47a1');
+    grad.addColorStop(0.5, '#1565c0');
+    grad.addColorStop(1, '#1976d2');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Знаменитая черная «палитра художника» на боку Дори
+    ctx.save();
+    ctx.beginPath();
+    const mid = segs[2];
+    ctx.translate(mid.x, mid.y);
+    ctx.rotate(mid.angle);
+    ctx.ellipse(0, -r * 0.25, r * 0.75, r * 0.45, 0, 0, Math.PI * 2);
+    ctx.lineWidth = Math.max(3, r * 0.18);
+    ctx.strokeStyle = '#050c18';
+    ctx.stroke();
+
+    // Желтый шип (скальпель) у хвоста
+    ctx.beginPath();
+    ctx.arc(-r * 0.8, 0, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd600';
+    ctx.fill();
+    ctx.restore();
+
+    // Глаз Дори
+    this.drawRealisticEye(ctx, segs[0], r * 0.22, '#2196f3');
+  }
+
+  // =========================================================================
+  // 4. ЖЕЛТАЯ ЗЕБРАСОМА (Zebrasoma flavescens)
+  // Ярко-желтое высокое тело, вытянутый хоботок, парусный плавник
+  // =========================================================================
+  drawYellowTang(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Парусные плавники сверху и снизу
+    this.drawCurvedFin(ctx, segs[2], -1, r * 1.15, r * 0.7, '#ffd600');
+    this.drawCurvedFin(ctx, segs[2], 1, r * 1.15, r * 0.7, '#ffd600');
+
+    // Высокое дисковидное тело
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      return Math.sin(t * Math.PI) * (r * 1.1);
+    });
+
+    ctx.beginPath();
+    // Вытянутое трубчатое рыльце
+    const snoutX = segs[0].x + Math.cos(segs[0].angle) * (r * 1.05);
+    const snoutY = segs[0].y + Math.sin(segs[0].angle) * (r * 1.05);
+    ctx.moveTo(snoutX, snoutY);
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(segs[n - 1].x, segs[n - 1].y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    ctx.fillStyle = '#ffd600'; // Солнечно-желтый
+    ctx.fill();
+    ctx.strokeStyle = '#fbc02d';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Белый шип-скальпель на хвосте
+    const tail = segs[n - 2];
+    ctx.beginPath();
+    ctx.arc(tail.x, tail.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    this.drawRealisticEye(ctx, segs[0], r * 0.2, '#fbc02d');
+  }
+
+  // =========================================================================
+  // 5. БОЛЬШАЯ БАРРАКУДА (Sphyraena barracuda) - Стадия 3
+  // Стреловидное торпедное тело, выступающая челюсть с кинжальными зубами,
+  // темные тигриные полосы на боках
+  // =========================================================================
+  drawBarracuda(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Вилообразный хвост с черными кончиками
+    const tailSeg = segs[n - 1];
+    ctx.save();
+    ctx.translate(tailSeg.x, tailSeg.y);
+    ctx.rotate(tailSeg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-r * 1.2, -r * 0.9);
+    ctx.lineTo(-r * 0.7, 0);
+    ctx.lineTo(-r * 1.2, r * 0.9);
+    ctx.closePath();
+    ctx.fillStyle = '#37474f';
+    ctx.fill();
+    ctx.strokeStyle = '#263238';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Два раздельных спинных плавника
+    this.drawTriangleFin(ctx, segs[2], -1, r * 0.65, r * 0.5, '#455a64');
+    this.drawTriangleFin(ctx, segs[5], -1, r * 0.55, r * 0.45, '#455a64');
+
+    // Торпедообразное прогонистое тело
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      if (i === 0) return r * 0.5; // острая голова
+      if (i <= 3) return r * 0.75;
+      return Math.sin(t * Math.PI) * (r * 0.75);
+    });
+
+    ctx.beginPath();
+    // Выступающая вперед нижняя челюсть!
+    const head = segs[0];
+    const snoutX = head.x + Math.cos(head.angle) * (r * 1.15);
+    const snoutY = head.y + Math.sin(head.angle) * (r * 1.15);
+    ctx.moveTo(snoutX, snoutY);
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    // Серебристо-стальной металлический градиент со свинцовой спинкой
+    const grad = ctx.createLinearGradient(left[1].x, left[1].y, right[1].x, right[1].y);
+    grad.addColorStop(0, '#263238'); // Темная спинка
+    grad.addColorStop(0.35, '#78909c'); // Серебристый бок
+    grad.addColorStop(1, '#cfd8dc'); // Белое брюшко
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = '#37474f';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // ТИГРИНЫЕ ПОПЕРЕЧНЫЕ ПОЛОСЫ БАРРАКУДЫ
+    ctx.save();
+    ctx.strokeStyle = 'rgba(38, 50, 56, 0.75)';
+    ctx.lineWidth = Math.max(2, r * 0.07);
+    for (let i = 2; i < n - 2; i++) {
+      const seg = segs[i];
+      const norm = seg.angle + Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(seg.x, seg.y);
+      ctx.lineTo(seg.x + Math.cos(norm) * (r * 0.55), seg.y + Math.sin(norm) * (r * 0.55));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ОСТРЫЕ КИНЖАЛЬНЫЕ ЗУБЫ В ПАСТИ
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(head.angle);
+    ctx.fillStyle = '#ffffff';
+    for (let t = -2; t <= 2; t++) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.8 + Math.abs(t) * 2, t * 4);
+      ctx.lineTo(r * 1.05 + Math.abs(t) * 2, t * 3);
+      ctx.lineTo(r * 0.8 + Math.abs(t) * 2, t * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Жаберная крышка
+    ctx.save();
+    ctx.beginPath();
+    const operc = segs[1];
+    ctx.arc(operc.x, operc.y, r * 0.5, segs[0].angle - 1, segs[0].angle + 1);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    this.drawRealisticEye(ctx, segs[0], r * 0.18, '#ffd600');
+  }
+
+  // =========================================================================
+  // 6. БОЛЬШАЯ БЕЛАЯ АКУЛА (Carcharodon carcharias) - Стадия 4
+  // 5 Жаберных щелей, классический треугольный спинной плавник,
+  // контрастное разделение (серая спина / белое брюхо), серповидный хвост
+  // =========================================================================
+  drawShark(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Мощный серповидный гетероцеркальный хвост акулы
+    const tailSeg = segs[n - 1];
+    ctx.save();
+    ctx.translate(tailSeg.x, tailSeg.y);
+    ctx.rotate(tailSeg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    // Верхняя длинная лопасть
+    ctx.quadraticCurveTo(-r * 0.8, -r * 1.3, -r * 1.4, -r * 1.2);
+    ctx.lineTo(-r * 0.85, 0);
+    // Нижняя лопасть
+    ctx.quadraticCurveTo(-r * 0.7, r * 0.9, -r * 1.1, r * 0.9);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#263238';
+    ctx.fill();
+    ctx.strokeStyle = '#102027';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // ЗНАМЕНИТЫЙ ТРЕУГОЛЬНЫЙ СПИННОЙ ПЛАВНИК АКУЛЫ
+    ctx.save();
+    const dSeg = segs[2];
+    ctx.translate(dSeg.x, dSeg.y);
+    ctx.rotate(dSeg.angle);
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.2, -r * 0.8);
+    ctx.lineTo(-r * 0.6, -r * 1.8); // Вершина плавника
+    ctx.quadraticCurveTo(-r * 1.1, -r * 1.1, -r * 0.95, -r * 0.75); // Выемка на задней кромке
+    ctx.closePath();
+    ctx.fillStyle = '#263238';
+    ctx.fill();
+    ctx.strokeStyle = '#102027';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Серповидные грудные плавники акулы
+    this.drawSharkPectorals(ctx, segs[1], r * 1.3);
+
+    // Мощное веретенообразное тело
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      if (i === 0) return r * 0.65; // коническое рыло
+      if (i === 1) return r * 1.05; // мощная холка
+      if (i <= 3) return r * 1.0;
+      return Math.sin(t * Math.PI) * (r * 0.95);
+    });
+
+    ctx.beginPath();
+    const head = segs[0];
+    const snoutX = head.x + Math.cos(head.angle) * (r * 1.0);
+    const snoutY = head.y + Math.sin(head.angle) * (r * 1.0);
+    ctx.moveTo(snoutX, snoutY);
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(tailSeg.x, tailSeg.y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    // Контрастное разделение: темно-свинцовая спина и белое брюхо
+    const grad = ctx.createLinearGradient(left[1].x, left[1].y, right[1].x, right[1].y);
+    grad.addColorStop(0, '#1c2833'); // Стально-черная спина
+    grad.addColorStop(0.48, '#37474f'); // Серый бок
+    grad.addColorStop(0.52, '#eceff1'); // Линия раздела
+    grad.addColorStop(1, '#ffffff'); // Белоснежное брюхо
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = '#263238';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 5 РЕАЛЬНЫХ ЖАБЕРНЫХ ЩЕЛЕЙ АКУЛЫ
+    ctx.save();
+    const gSeg = segs[1];
+    ctx.translate(gSeg.x, gSeg.y);
+    ctx.rotate(gSeg.angle);
+    ctx.strokeStyle = '#102027';
+    ctx.lineWidth = 1.8;
+    for (let g = 0; g < 5; g++) {
+      const gx = -r * 0.15 + g * (r * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(gx, -r * 0.55);
+      ctx.lineTo(gx - 2, -r * 0.15);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ПОЛУЛУННЫЙ РОТ С ТРЕУГОЛЬНЫМИ БЕЛЫМИ ЗУБАМИ
+    ctx.save();
+    ctx.translate(head.x, head.y);
+    ctx.rotate(head.angle);
+    ctx.beginPath();
+    ctx.arc(r * 0.4, r * 0.1, r * 0.4, 0, Math.PI * 0.6);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Белые зубья
+    ctx.fillStyle = '#ffffff';
+    for (let z = 0; z < 4; z++) {
+      ctx.beginPath();
+      ctx.moveTo(r * 0.35 + z * 4, r * 0.15);
+      ctx.lineTo(r * 0.38 + z * 4, r * 0.3);
+      ctx.lineTo(r * 0.41 + z * 4, r * 0.15);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Глубокий темный глаз хищника
+    this.drawRealisticEye(ctx, head, r * 0.16, '#000000');
+  }
+
+  // =========================================================================
+  // 7. КРЫЛАТКА-ЗЕБРА (Pterois volitans)
+  // Веерообразные роскошные плавники, ядовитые иглы, полосатый зебра-узор
+  // =========================================================================
+  drawLionfish(ctx, theme) {
+    const segs = this.segments;
+    const r = this.radius;
+    const n = segs.length;
+
+    // Роскошные веерообразные плавники-крылья
+    this.drawLionfishWings(ctx, segs[1], r * 1.4);
+
+    // Длинные ядовитые иглы спинного плавника
+    ctx.save();
+    for (let i = 1; i <= 4; i++) {
+      const s = segs[i];
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle - Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -r * 1.5);
+      ctx.strokeStyle = i % 2 === 0 ? '#b71c1c' : '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Тело крылатки
+    const { left, right } = this.getProfilePoints((i, n) => {
+      const t = i / (n - 1);
+      return Math.sin(t * Math.PI) * (r * 0.85);
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x + Math.cos(segs[0].angle) * (r * 0.8), segs[0].y + Math.sin(segs[0].angle) * (r * 0.8));
+    left.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(segs[n - 1].x, segs[n - 1].y);
+    for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+    ctx.closePath();
+
+    ctx.fillStyle = '#b71c1c';
+    ctx.fill();
+
+    // Чередующиеся белые полоски зебры
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    for (let i = 1; i < n - 1; i += 2) {
+      const s = segs[i];
+      const norm = s.angle + Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(s.x + Math.cos(norm) * (r * 0.8), s.y + Math.sin(norm) * (r * 0.8));
+      ctx.lineTo(s.x - Math.cos(norm) * (r * 0.8), s.y - Math.sin(norm) * (r * 0.8));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    this.drawRealisticEye(ctx, segs[0], r * 0.22, '#d32f2f');
+  }
+
+  // =========================================================================
+  // ВСПОМОГАТЕЛЬНЫЕ АНАТОМИЧЕСКИЕ МЕТОДЫ
+  // =========================================================================
+
+  // Вычисление гладких профильных точек левого и правого бока
+  getProfilePoints(thicknessFn) {
+    const segs = this.segments;
+    const n = segs.length;
+    const left = [];
+    const right = [];
+
+    for (let i = 0; i < n; i++) {
+      const seg = segs[i];
+      const th = thicknessFn(i, n);
+      const norm = seg.angle + Math.PI / 2;
+      left.push({
+        x: seg.x + Math.cos(norm) * th,
+        y: seg.y + Math.sin(norm) * th
+      });
+      right.push({
+        x: seg.x - Math.cos(norm) * th,
+        y: seg.y - Math.sin(norm) * th
+      });
+    }
+    return { left, right };
+  }
+
+  // Реалистичный живой глаз с радужкой, зрачком и световым бликом
+  drawRealisticEye(ctx, headSeg, eyeRadius, irisColor) {
+    const eyeDist = this.radius * 0.42;
+    const forward = this.radius * 0.35;
+
+    [-1, 1].forEach((side) => {
+      const norm = headSeg.angle + (side * Math.PI / 2);
+      const eyeX = headSeg.x + Math.cos(headSeg.angle) * forward + Math.cos(norm) * eyeDist;
+      const eyeY = headSeg.y + Math.sin(headSeg.angle) * forward + Math.sin(norm) * eyeDist;
+
+      // Склера (глазное яблоко)
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = '#212121';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Радужная оболочка
+      ctx.beginPath();
+      ctx.arc(eyeX, eyeY, eyeRadius * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = irisColor;
+      ctx.fill();
+
+      // Глубокий черный зрачок
+      ctx.beginPath();
+      ctx.arc(eyeX + Math.cos(headSeg.angle) * (eyeRadius * 0.2), eyeY + Math.sin(headSeg.angle) * (eyeRadius * 0.2), eyeRadius * 0.45, 0, Math.PI * 2);
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fill();
+
+      // Спекулярный белый блик света
+      ctx.beginPath();
+      ctx.arc(eyeX - eyeRadius * 0.2, eyeY - eyeRadius * 0.2, eyeRadius * 0.22, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    });
+  }
+
+  drawCurvedFin(ctx, seg, side, len, spread, color) {
+    ctx.save();
+    ctx.translate(seg.x, seg.y);
+    ctx.rotate(seg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, side * (this.radius * 0.7));
+    ctx.quadraticCurveTo(-len * 0.5, side * (this.radius * 0.7 + spread), -len, side * (this.radius * 0.6));
+    ctx.lineTo(-len * 0.7, side * (this.radius * 0.6));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawTriangleFin(ctx, seg, side, len, spread, color) {
+    ctx.save();
+    ctx.translate(seg.x, seg.y);
+    ctx.rotate(seg.angle);
+    ctx.beginPath();
+    ctx.moveTo(0, side * (this.radius * 0.6));
+    ctx.lineTo(-len * 0.4, side * (this.radius * 0.6 + spread));
+    ctx.lineTo(-len, side * (this.radius * 0.5));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#263238';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawPectoralFinsBordered(ctx, seg, length, color) {
+    const flap = Math.sin(this.finCycle * 1.3) * 0.25;
+    [-1, 1].forEach((side) => {
+      ctx.save();
+      ctx.translate(seg.x, seg.y);
+      ctx.rotate(seg.angle + (side * Math.PI * 0.4) + flap * side);
+
+      ctx.beginPath();
+      ctx.ellipse(length * 0.5, side * (length * 0.3), length * 0.5, length * 0.3, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  drawSharkPectorals(ctx, seg, length) {
+    const flap = Math.sin(this.finCycle) * 0.12;
+    [-1, 1].forEach((side) => {
+      ctx.save();
+      ctx.translate(seg.x, seg.y);
+      ctx.rotate(seg.angle + (side * Math.PI * 0.45) + flap * side);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(length * 0.5, side * (length * 0.4), length, side * (length * 0.2));
+      ctx.lineTo(length * 0.6, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#263238';
+      ctx.fill();
+      ctx.strokeStyle = '#102027';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  drawLionfishWings(ctx, seg, length) {
+    const flap = Math.sin(this.finCycle) * 0.2;
+    [-1, 1].forEach((side) => {
+      ctx.save();
+      ctx.translate(seg.x, seg.y);
+      ctx.rotate(seg.angle + (side * Math.PI * 0.5) + flap * side);
+
+      for (let r = 0; r < 5; r++) {
+        const rayAngle = (r / 5) * 0.6 - 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(rayAngle) * length, Math.sin(rayAngle) * length * side);
+        ctx.strokeStyle = r % 2 === 0 ? '#b71c1c' : '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+}
+
+window.Fish = Fish;
+window.EVOLUTION_STAGES = EVOLUTION_STAGES;
+window.REAL_SPECIES_PRESETS = REAL_SPECIES_PRESETS;

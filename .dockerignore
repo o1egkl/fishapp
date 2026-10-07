@@ -1,0 +1,5 @@
+.git
+.gitignore
+*.log
+*.ps1
+README.md

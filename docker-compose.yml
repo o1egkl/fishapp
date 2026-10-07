@@ -1,0 +1,7 @@
+services:
+  aquagenesis:
+    build: .
+    container_name: aquagenesis-game
+    ports:
+      - "8080:80"
+    restart: unless-stopped
