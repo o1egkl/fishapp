@@ -20,7 +20,7 @@ const EVOLUTION_STAGES = [
     icon: '🐟',
     minMass: 10,
     targetMass: 100,
-    baseRadius: 32,
+    baseRadius: 26,
     speed: 0.85,
     dashSpeed: 1.75,
     lengthCm: '4 - 12 см',
@@ -34,7 +34,7 @@ const EVOLUTION_STAGES = [
     icon: '🐠',
     minMass: 100,
     targetMass: 450,
-    baseRadius: 50,
+    baseRadius: 40,
     speed: 0.98,
     dashSpeed: 2.0,
     lengthCm: '15 - 35 см',
@@ -48,7 +48,7 @@ const EVOLUTION_STAGES = [
     icon: '🦈',
     minMass: 450,
     targetMass: 1800,
-    baseRadius: 82,
+    baseRadius: 54,
     speed: 1.15,
     dashSpeed: 2.3,
     lengthCm: '70 - 150 см',
@@ -62,7 +62,7 @@ const EVOLUTION_STAGES = [
     icon: '🦈',
     minMass: 1800,
     targetMass: 5000,
-    baseRadius: 125,
+    baseRadius: 72,
     speed: 1.35,
     dashSpeed: 2.6,
     lengthCm: '3 - 6 метров',
@@ -76,7 +76,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'neontetra',
     name: 'Неоновая Тетра',
     stage: 1,
-    baseRadius: 28,
+    baseRadius: 24,
     speed: 0.82,
     dashSpeed: 1.7,
     numSegments: 7,
@@ -86,7 +86,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'clownfish',
     name: 'Рыба-Клоун',
     stage: 2,
-    baseRadius: 48,
+    baseRadius: 38,
     speed: 0.92,
     dashSpeed: 1.9,
     numSegments: 8,
@@ -96,7 +96,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'bluetang',
     name: 'Голубой Хирург (Дори)',
     stage: 2,
-    baseRadius: 50,
+    baseRadius: 40,
     speed: 0.96,
     dashSpeed: 1.95,
     numSegments: 8,
@@ -106,7 +106,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'yellowtang',
     name: 'Желтая Зебрасома',
     stage: 2,
-    baseRadius: 48,
+    baseRadius: 38,
     speed: 0.94,
     dashSpeed: 1.9,
     numSegments: 8,
@@ -116,7 +116,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'lionfish',
     name: 'Крылатка-Зебра',
     stage: 3,
-    baseRadius: 64,
+    baseRadius: 46,
     speed: 1.0,
     dashSpeed: 2.05,
     numSegments: 8,
@@ -126,7 +126,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'barracuda',
     name: 'Большая Барракуда',
     stage: 3,
-    baseRadius: 82,
+    baseRadius: 54,
     speed: 1.15,
     dashSpeed: 2.3,
     numSegments: 9,
@@ -136,7 +136,7 @@ const REAL_SPECIES_PRESETS = {
     species: 'shark',
     name: 'Большая Белая Акула',
     stage: 4,
-    baseRadius: 125,
+    baseRadius: 72,
     speed: 1.3,
     dashSpeed: 2.6,
     numSegments: 10,
@@ -161,7 +161,7 @@ class Fish {
     this.colors = options.colors || { body: defaultColor };
 
     this.mass = options.mass || (this.stage === 1 ? 15 : this.stage === 2 ? 150 : this.stage === 3 ? 600 : 2500);
-    this.radius = options.radius || (this.stage === 1 ? 32 : this.stage === 2 ? 50 : this.stage === 3 ? 82 : 125);
+    this.radius = options.radius || (this.stage === 1 ? 26 : this.stage === 2 ? 40 : this.stage === 3 ? 54 : 72);
     this.maxSpeed = options.maxSpeed || 0.85;
     this.dashSpeed = options.dashSpeed || 1.75;
     this.turnSpeed = options.turnSpeed || (this.isPlayer ? 0.24 : 0.065);
@@ -215,9 +215,11 @@ class Fish {
       this.updateAI(player, otherFish, foods);
     }
 
-    // Обновляем радиус в зависимости от массы (увеличенный масштаб ~1.85x)
-    const targetRadius = Math.max(24, Math.pow(this.mass, 0.48) * 7.6);
-    this.radius += (targetRadius - this.radius) * 0.05;
+    // Плавный рост радиуса игрока в зависимости от биомассы
+    if (this.isPlayer) {
+      const targetRadius = Math.max(22, Math.pow(this.mass, 0.215) * 13.5);
+      this.radius += (targetRadius - this.radius) * 0.05;
+    }
 
     // Физика движения с учетом множителя скорости
     const speed = Math.hypot(this.vx, this.vy);
@@ -254,8 +256,20 @@ class Fish {
     this.smoothFacing += (this.facing - this.smoothFacing) * turnLerp;
     this.pitch = this.angle;
 
-    // Спокойные, реалистичные колебания хвоста
-    const swimFreq = (0.04 + speed * 0.035) * speedMult;
+    // Гидродинамическая частота взмахов хвоста:
+    // Крупные рыбы (акула, барракуда) совершают размеренные, мощные толчки хвостом,
+    // а мелкие рыбы двигаются с более высокой частотой.
+    let baseFreq = 0.038;
+    if (this.species === 'shark') {
+      baseFreq = 0.020;
+    } else if (this.species === 'barracuda') {
+      baseFreq = 0.026;
+    } else if (this.species === 'lionfish') {
+      baseFreq = 0.030;
+    } else if (this.species === 'neontetra') {
+      baseFreq = 0.046;
+    }
+    const swimFreq = (baseFreq + speed * 0.024) * speedMult;
     this.tailPhase += swimFreq;
     this.finCycle += swimFreq * 1.1;
     this.pulseAnim += 0.05 * speedMult;

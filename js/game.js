@@ -66,10 +66,8 @@ class GameManager {
     this.dangerCooldown = 0;
     this.lastTime = performance.now();
 
-    // Скорость игры (по умолчанию спокойный режим 0.5x)
-    this.gameSpeed = 0.5;
-    this.speedModes = [0.5, 1.0, 1.5];
-    this.currentSpeedIdx = 0;
+    // Постоянная оптимальная скорость игры (1.25x)
+    this.gameSpeed = 1.25;
 
     this.initDOM();
     this.bindEvents();
@@ -192,17 +190,6 @@ class GameManager {
       document.getElementById('sound-icon').textContent = isMuted ? '🔇' : '🔊';
     });
 
-    // Переключатель скорости игры
-    const speedBtn = document.getElementById('speed-toggle-btn');
-    if (speedBtn) {
-      speedBtn.addEventListener('click', () => {
-        this.currentSpeedIdx = (this.currentSpeedIdx + 1) % this.speedModes.length;
-        this.gameSpeed = this.speedModes[this.currentSpeedIdx];
-        const icon = this.gameSpeed === 0.5 ? '🐢' : this.gameSpeed === 1.0 ? '⚖️' : '⚡';
-        document.getElementById('speed-icon').textContent = icon;
-        document.getElementById('speed-val-text').textContent = `${this.gameSpeed}x`;
-      });
-    }
 
     // Пауза
     document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());

@@ -283,34 +283,6 @@ html, body {
   gap: 2px;
 }
 
-.speed-switcher {
-  display: flex;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 10px;
-  padding: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-#speed-toggle-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--theme-accent-gold);
-  font-weight: 700;
-  border-radius: 7px;
-  padding: 5px 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  transition: all 0.2s ease;
-}
-
-#speed-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 0 10px rgba(255, 209, 102, 0.4);
-}
-
 .theme-btn {
   background: transparent;
   border: none;

@@ -133,39 +133,95 @@ class AssetManager {
       ctx.shadowColor = species === 'neontetra' ? '#00e5ff' : species === 'clownfish' ? '#ff6d00' : '#2979ff';
     }
 
-    // Сегментное волнообразное плавание (Skeletal Mesh Waving):
-    // Нарезаем точную область тела рыбы на 8 вертикальных анатомических срезов.
-    // Срезы головы и жабр устойчивы, хвост колышется естественной волной.
-    const numStrips = 8;
+    // =========================================================================
+    // НЕПРЕРЫВНАЯ БИОМЕХАНИЧЕСКАЯ АНИМАЦИЯ ПОЗВОНОЧНИКА (Continuous Skeletal Spine Ribbon)
+    // Устраняет фрагментацию: тело плавно изгибается как единое монолитное существо,
+    // голова и передняя часть остаются жесткими, а хвостовой стебель и плавник
+    // совершают непрерывные органичные волнообразные толчки.
+    // =========================================================================
+
+    // Тонкая нарезка на узкие микро-сегменты (36 полос для крупных хищников, 24 для остальных)
+    const isLargePredator = species === 'shark' || species === 'barracuda';
+    const numStrips = isLargePredator ? 36 : 24;
     const stripSrcW = b.w / numStrips;
     const stripDestW = fishLength / numStrips;
 
-    // Смещение центра вращения в район жабр/глаз (38% от носа рыбы)
+    // Смещение центра вращения в район жабр (38% от кончика носа)
     const startX = -fishLength * 0.62;
-    const startY = -fishHeight / 2;
 
-    const waveAmp = (isDashing ? 5.5 : 3.2) * (radius / 24);
-    const waveFreq = isDashing ? 1.6 : 1.0;
+    // Параметры биомеханики плавания для каждого вида:
+    let rigidFraction = 0.44; // Доля передней части тела (череп, жабры, грудные плавники), которая держит курс
+    let waveAmp = Math.min(7.5, radius * 0.12) * (isDashing ? 1.35 : 1.0);
+    let waveFreq = isDashing ? 1.3 : 0.9;
+    let waveLengthFactor = 1.0;
+
+    if (species === 'shark') {
+      // Большая Белая Акула: тяжелый гидродинамический хищник.
+      // Передние 52% тела (череп, массивные челюсти, жаберные щели, мощный спинной плавник) монолитны.
+      // Изгибается только хвостовой стебель с серповидным хвостом.
+      rigidFraction = 0.52;
+      waveFreq = isDashing ? 1.15 : 0.65; // Размеренные грациозные взмахи
+      waveAmp = Math.min(6.5, radius * 0.09) * (isDashing ? 1.3 : 0.9);
+      waveLengthFactor = 0.82;
+    } else if (species === 'barracuda') {
+      // Барракуда: стреловидный бросковый хищник.
+      // Первые 50% тела прямые как стрела, упругий взмах на хвосте.
+      rigidFraction = 0.50;
+      waveFreq = isDashing ? 1.35 : 0.85;
+      waveAmp = Math.min(6.0, radius * 0.11) * (isDashing ? 1.4 : 0.95);
+      waveLengthFactor = 0.88;
+    } else if (species === 'lionfish') {
+      rigidFraction = 0.42;
+      waveFreq = isDashing ? 1.15 : 0.75;
+      waveAmp = Math.min(6.0, radius * 0.12) * (isDashing ? 1.25 : 0.95);
+      waveLengthFactor = 0.95;
+    }
+
+    // Функция поперечного смещения оси рыбы Y(u), где u = 0 (кончик хвоста), u = 1 (кончик носа)
+    const getSpineY = (u) => {
+      if (u >= (1 - rigidFraction)) return 0; // Передняя часть полностью жесткая!
+      // Плавное квадратично-степенное нарастание гибкости от середины тела к хвосту
+      const progress = ((1 - rigidFraction) - u) / (1 - rigidFraction);
+      const flex = Math.pow(progress, 1.85);
+      // Бегущая фазовая волна от головы к хвосту (как в настоящей гидродинамике)
+      const phase = swimPhase * waveFreq + (1 - u) * (2.8 * waveLengthFactor);
+      return Math.sin(phase) * waveAmp * flex;
+    };
+
+    // Отрисовка каждого сегмента с поворотом по локальной касательной позвоночника
+    const halfH = fishHeight * 0.5;
+    const eps = 0.25 / numStrips;
+    const dxEps = 2 * eps * fishLength;
 
     for (let i = 0; i < numStrips; i++) {
-      // i = 0 (хвост): максимальная гибкость (flex = 1.0)
-      // i = 7 (голова): неподвижна относительно направления взгляда (flex = 0.0)
-      const flex = Math.pow((numStrips - 1 - i) / (numStrips - 1), 1.85);
-      const stripWaveY = Math.sin(swimPhase * waveFreq + (i * 0.52)) * waveAmp * flex;
+      const u = (i + 0.5) / numStrips;
+      const spineY = getSpineY(u);
+
+      // Локальный угол касательной позвоночника (производная dy/dx)
+      const dy = getSpineY(Math.min(1, u + eps)) - getSpineY(Math.max(0, u - eps));
+      const tangentAngle = Math.atan2(dy, dxEps);
 
       const sx = b.minX + i * stripSrcW;
       const sy = b.minY;
       const sw = stripSrcW;
       const sh = b.h;
 
-      const dx = startX + i * stripDestW;
-      const dy = startY + stripWaveY;
+      const segCenterX = startX + (i + 0.5) * stripDestW;
+      const segCenterY = spineY;
 
+      ctx.save();
+      ctx.translate(segCenterX, segCenterY);
+      ctx.rotate(tangentAngle);
+
+      // Рисуем с небольшим перекрытием (+1.6px), чтобы исключить растровые щели
       ctx.drawImage(
         sprite,
         sx, sy, sw, sh,
-        dx, dy, stripDestW + 0.8, fishHeight
+        -stripDestW * 0.5 - 0.8, -halfH,
+        stripDestW + 1.6, fishHeight
       );
+
+      ctx.restore();
     }
 
     ctx.restore();
