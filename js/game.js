@@ -193,6 +193,18 @@ class GameManager {
 
     // Пауза
     document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+    const mobilePauseBtn = document.getElementById('mobile-pause-btn');
+    if (mobilePauseBtn) {
+      mobilePauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePause();
+      });
+      mobilePauseBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.togglePause();
+      }, { passive: false });
+    }
     document.getElementById('resume-btn').addEventListener('click', () => this.togglePause());
     document.getElementById('restart-from-pause-btn').addEventListener('click', () => {
       this.dom.pauseModal.classList.add('hidden');

@@ -62,15 +62,8 @@
 
       <!-- Кнопки управления и режимов -->
       <div class="hud-card controls-card">
-        <!-- Селектор языка (RU | EN | עב) -->
-        <div class="lang-switcher" role="group" aria-label="Язык / Language / שפה">
-          <button id="lang-ru-btn" class="lang-btn active" data-lang="ru" title="Русский">RU</button>
-          <button id="lang-en-btn" class="lang-btn" data-lang="en" title="English">EN</button>
-          <button id="lang-he-btn" class="lang-btn" data-lang="he" title="עברית">עב</button>
-        </div>
-
-        <!-- Селектор освещения -->
-        <div class="theme-switcher" role="group" aria-label="Режимы освещения">
+        <!-- Селектор освещения (на десктопе) -->
+        <div class="theme-switcher desktop-only" role="group" aria-label="Режимы освещения">
           <button id="theme-day-btn" class="theme-btn active" data-i18n-title="dayTitle" title="Дневной риф (Солнечные лучи)" data-theme="day">
             ☀️ <span class="theme-btn-text" data-i18n="day">День</span>
           </button>
@@ -123,6 +116,9 @@
           <div id="joystick-stick"></div>
         </div>
       </div>
+      <button id="mobile-pause-btn" data-i18n-title="pauseTitle" aria-label="Пауза">
+        <span>⏸️</span>
+      </button>
       <button id="mobile-dash-btn" data-i18n-aria="dashMobile" aria-label="Рывок">
         <span>⚡</span>
         <small data-i18n="dashMobile">РЫВОК</small>
@@ -252,6 +248,27 @@
       <div class="modal-window glass-panel pause-panel">
         <h2 data-i18n="gamePaused">ИГРА НА ПАУЗЕ</h2>
         <p data-i18n="oceanFrozen">Океан замер во времени</p>
+
+        <!-- Настройки в окне паузы (Язык и Освещение) -->
+        <div class="pause-settings-box">
+          <div class="pause-setting-row">
+            <span class="pause-setting-label" data-i18n="langLabel">Язык / Language:</span>
+            <div class="lang-switcher" role="group" aria-label="Язык / Language">
+              <button class="lang-btn active" data-lang="ru" title="Русский">RU</button>
+              <button class="lang-btn" data-lang="en" title="English">EN</button>
+              <button class="lang-btn" data-lang="he" title="עברית">עב</button>
+            </div>
+          </div>
+          <div class="pause-setting-row">
+            <span class="pause-setting-label" data-i18n="themeLabel">Освещение рифа:</span>
+            <div class="theme-switcher" role="group" aria-label="Освещение">
+              <button class="theme-btn active" data-theme="day">☀️ <span data-i18n="day">День</span></button>
+              <button class="theme-btn" data-theme="sunset">🌅 <span data-i18n="sunset">Закат</span></button>
+              <button class="theme-btn" data-theme="neon">🌌 <span data-i18n="neon">Неон</span></button>
+            </div>
+          </div>
+        </div>
+
         <div class="pause-actions">
           <button id="resume-btn" class="btn-primary" data-i18n="resumeBtn">ПРОДОЛЖИТЬ</button>
           <button id="restart-from-pause-btn" class="btn-secondary" data-i18n="restartBtn">НАЧАТЬ ЗАНОВО</button>

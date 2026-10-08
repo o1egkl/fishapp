@@ -596,15 +596,43 @@ body.theme-neon .lang-btn.active {
   transform: scale(0.92);
 }
 
+#mobile-pause-btn {
+  position: absolute;
+  bottom: 125px;
+  right: 32px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1.5px solid var(--theme-card-border);
+  background: var(--theme-card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  font-size: 22px;
+  transition: transform 0.12s ease, background 0.15s ease;
+  z-index: 26;
+}
+
+#mobile-pause-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* ==========================================================
    ТРЕВОГА ХИЩНИКА & ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ
    ========================================================== */
 .danger-banner {
   position: absolute;
-  top: 80px;
+  top: 76px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 25;
+  z-index: 18;
   background: rgba(255, 40, 60, 0.9);
   border: 1.5px solid #fff;
   border-radius: 30px;
@@ -618,8 +646,10 @@ body.theme-neon .lang-btn.active {
   color: white;
   box-shadow: 0 0 25px rgba(255, 40, 60, 0.85);
   animation: danger-pulse 0.8s infinite alternate ease-in-out;
-  pointer-events: none;
+  pointer-events: none !important;
   transition: opacity 0.3s ease;
+  white-space: nowrap;
+  max-width: 90vw;
 }
 
 @keyframes danger-pulse {
@@ -1045,6 +1075,38 @@ body.theme-neon .btn-primary {
   font-size: 18px;
 }
 
+/* Настройки в окне паузы (Язык и Освещение) */
+.pause-settings-box {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin: 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.pause-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pause-setting-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--theme-text-muted);
+  white-space: nowrap;
+}
+
+.pause-settings-box .lang-switcher,
+.pause-settings-box .theme-switcher {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .pause-actions {
   display: flex;
   gap: 10px;
@@ -1073,61 +1135,92 @@ body.theme-neon .btn-primary {
   }
 }
 
-@media (max-width: 680px), (hover: none) and (pointer: coarse) {
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .desktop-only {
+    display: none !important;
+  }
+
   #mobile-controls {
     display: block;
   }
 
   #hud-top {
-    top: 8px;
-    left: 8px;
-    right: 8px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
+  .hud-card {
+    padding: 5px 8px;
+  }
+
   .stage-badge-container {
-    padding: 6px 10px;
+    padding: 5px 8px;
     gap: 6px;
   }
 
   .stage-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+
+  .stage-info .hud-label {
+    font-size: 8.5px;
   }
 
   .stage-info .hud-value {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .progress-card {
     order: 3;
     width: 100%;
     max-width: 100%;
-    margin-top: -2px;
-    padding: 6px 10px;
+    margin-top: 0;
+    padding: 5px 10px;
   }
 
   .stats-card {
-    padding: 6px 10px;
+    padding: 5px 8px;
+  }
+
+  .stat-item {
+    gap: 6px;
   }
 
   .controls-card {
-    padding: 6px 8px;
+    padding: 5px 8px;
+    gap: 6px;
+  }
+
+  .icon-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .danger-banner {
+    top: 94px;
+    font-size: 11px;
+    padding: 5px 14px;
+    gap: 6px;
   }
 
   .radar-hud {
     bottom: 12px;
     left: 12px;
     padding: 6px;
-    transform: scale(0.85);
+    transform: scale(0.82);
     transform-origin: bottom left;
   }
 
   .boost-card {
-    bottom: 120px;
-    right: 12px;
-    transform: scale(0.9);
+    bottom: 195px;
+    right: 14px;
+    transform: scale(0.85);
     transform-origin: bottom right;
   }
 
@@ -1140,12 +1233,18 @@ body.theme-neon .btn-primary {
   }
 
   .modal-window {
-    padding: 20px 18px;
+    padding: 20px 16px;
     border-radius: 18px;
   }
 
   .modal-header h1 {
     font-size: 24px;
+  }
+
+  .pause-setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 }
 
@@ -1193,6 +1292,16 @@ html[dir="rtl"] #touch-joystick-area {
 html[dir="rtl"] #mobile-dash-btn {
   right: auto;
   left: 18px;
+}
+
+html[dir="rtl"] #mobile-pause-btn {
+  right: auto;
+  left: 32px;
+}
+
+html[dir="rtl"] .pause-settings-box {
+  direction: rtl;
+  text-align: right;
 }
 
 html[dir="rtl"] .rules-grid,

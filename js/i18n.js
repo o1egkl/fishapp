@@ -82,6 +82,8 @@ const TRANSLATIONS = {
     // Модальное окно паузы
     gamePaused: 'ИГРА НА ПАУЗЕ',
     oceanFrozen: 'Океан замер во времени',
+    langLabel: 'Язык / Language:',
+    themeLabel: 'Освещение рифа:',
     resumeBtn: 'ПРОДОЛЖИТЬ',
     restartBtn: 'НАЧАТЬ ЗАНОВО',
 
@@ -235,6 +237,8 @@ const TRANSLATIONS = {
     // Pause Modal
     gamePaused: 'GAME PAUSED',
     oceanFrozen: 'The ocean is frozen in time',
+    langLabel: 'Language / Язык:',
+    themeLabel: 'Reef Lighting:',
     resumeBtn: 'RESUME',
     restartBtn: 'RESTART',
 
@@ -388,6 +392,8 @@ const TRANSLATIONS = {
     // Pause Modal
     gamePaused: 'המשחק הושהה',
     oceanFrozen: 'האוקיינוס קפא בזמן',
+    langLabel: 'שפה / Language:',
+    themeLabel: 'תאורת שונית:',
     resumeBtn: 'המשך',
     restartBtn: 'התחל מחדש',
 
