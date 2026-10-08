@@ -527,7 +527,11 @@ class GameManager {
   triggerDash() {
     if (this.player && this.player.dashEnergy >= 25 && !this.player.isDashing) {
       this.player.isDashing = true;
-      this.sound.playDash();
+      if (this.sound && this.sound.playOtherEvent) {
+        this.sound.playOtherEvent('dash');
+      } else if (this.sound && this.sound.playDash) {
+        this.sound.playDash();
+      }
 
       // Выбрасываем пузырьки из-под хвоста
       for (let i = 0; i < 8; i++) {
@@ -541,10 +545,8 @@ class GameManager {
     if (this.isGameOver || !this.isPlaying) return;
     this.isPaused = !this.isPaused;
     this.dom.pauseModal.classList.toggle('hidden', !this.isPaused);
-    if (this.sound && this.sound.ambientGain && this.sound.ctx && !this.sound.isMuted) {
-      try {
-        this.sound.ambientGain.gain.setValueAtTime(this.isPaused ? 0.02 : 0.07, this.sound.ctx.currentTime);
-      } catch (e) {}
+    if (this.sound && this.sound.setPaused) {
+      this.sound.setPaused(this.isPaused);
     }
   }
 
@@ -674,19 +676,23 @@ class GameManager {
 
     let nearestThreatDist = 9999;
 
-    // А. Поедание планктона
+    // А. Поедание планктона (ЗВУК №1)
     for (let i = this.planktons.length - 1; i >= 0; i--) {
       const plankton = this.planktons[i];
       const d = Math.hypot(mouthX - plankton.x, mouthY - plankton.y);
       if (d < eatRadius + plankton.radius) {
         p.triggerChomp();
-        this.sound.playEatPlankton();
+        if (this.sound && this.sound.playPlayerSwallow) {
+          this.sound.playPlayerSwallow('plankton', plankton.mass);
+        } else if (this.sound && this.sound.playEatPlankton) {
+          this.sound.playEatPlankton();
+        }
         this.addBiomass(plankton.mass, plankton.x, plankton.y);
         this.planktons.splice(i, 1);
       }
     }
 
-    // Б. Поедание моллюсков (раковин / устриц)
+    // Б. Поедание моллюсков (раковин / устриц) (ЗВУК №1)
     for (let clam of this.clams) {
       if (clam.isDead) continue;
       const d = Math.hypot(mouthX - clam.x, mouthY - clam.y);
@@ -694,7 +700,11 @@ class GameManager {
         if (clam.isOpen || p.stage >= 2) {
           clam.isDead = true;
           p.triggerChomp();
-          this.sound.playEatClam(clam.isOpen);
+          if (this.sound && this.sound.playPlayerSwallow) {
+            this.sound.playPlayerSwallow('clam', clam.mass * (clam.isOpen ? 2 : 1));
+          } else if (this.sound && this.sound.playEatClam) {
+            this.sound.playEatClam(clam.isOpen);
+          }
           const clamLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatPearlClam') : '🦪 Жемчужница!';
           this.addBiomass(clam.mass * (clam.isOpen ? 2 : 1), clam.x, clam.y, clamLabel);
           if (clam.isOpen && p.lives < (p.maxLives || 3)) {
@@ -708,28 +718,36 @@ class GameManager {
       }
     }
 
-    // В. Поедание крабов
+    // В. Поедание крабов (ЗВУК №1)
     for (let crab of this.crabs) {
       if (crab.isDead) continue;
       const d = Math.hypot(mouthX - crab.x, mouthY - crab.y);
       if (d < eatRadius + crab.radius && p.radius >= crab.radius * 0.9) {
         crab.isDead = true;
         p.triggerChomp();
-        this.sound.playEatCrab();
+        if (this.sound && this.sound.playPlayerSwallow) {
+          this.sound.playPlayerSwallow('crab', crab.mass);
+        } else if (this.sound && this.sound.playEatCrab) {
+          this.sound.playEatCrab();
+        }
         const crabLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatCrab') : '🦀 Вкусный краб!';
         this.addBiomass(crab.mass, crab.x, crab.y, crabLabel);
         this.spawnBiteParticles(crab.x, crab.y, '#e53935');
       }
     }
 
-    // Г. Поедание наутилусов
+    // Г. Поедание наутилусов (ЗВУК №1)
     for (let naut of this.nautiluses) {
       if (naut.isDead) continue;
       const d = Math.hypot(mouthX - naut.x, mouthY - naut.y);
       if (d < eatRadius + naut.radius && p.radius >= naut.radius * 0.95) {
         naut.isDead = true;
         p.triggerChomp();
-        this.sound.playEatFish(naut.mass);
+        if (this.sound && this.sound.playPlayerSwallow) {
+          this.sound.playPlayerSwallow('fish', naut.mass);
+        } else if (this.sound && this.sound.playEatFish) {
+          this.sound.playEatFish(naut.mass);
+        }
         const nautLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatNautilus') : '🌀 Наутилус!';
         this.addBiomass(naut.mass, naut.x, naut.y, nautLabel);
         this.spawnBiteParticles(naut.x, naut.y, '#ff7043');
@@ -742,12 +760,16 @@ class GameManager {
       if (!npc) continue;
       const dist = Math.hypot(p.x - npc.x, p.y - npc.y);
 
-      // 1. Поедание: Игрок может съесть рыбу, если его радиус превосходит ее
+      // 1. Поедание рыбы: Игрок глотает рыбу, если его радиус превосходит ее (ЗВУК №1)
       if (p.radius >= npc.radius * 1.05) {
         const mouthDist = Math.hypot(mouthX - npc.x, mouthY - npc.y);
         if (mouthDist < eatRadius + npc.radius * 0.6) {
           p.triggerChomp();
-          if (this.sound && this.sound.playEatFish) this.sound.playEatFish(npc.mass);
+          if (this.sound && this.sound.playPlayerSwallow) {
+            this.sound.playPlayerSwallow('fish', npc.mass);
+          } else if (this.sound && this.sound.playEatFish) {
+            this.sound.playEatFish(npc.mass);
+          }
           const speciesInfo = (typeof REAL_SPECIES_PRESETS !== 'undefined' && REAL_SPECIES_PRESETS[npc.species]) || null;
           const fishName = (typeof window !== 'undefined' && window.I18N && window.I18N.getSpeciesName(npc.species)) || 
                            (speciesInfo ? speciesInfo.name : 'Рыба');
@@ -774,14 +796,18 @@ class GameManager {
           const playerBiteDist = Math.hypot(npcMouthX - p.x, npcMouthY - p.y);
 
           if (playerBiteDist < npc.radius * 0.8 + p.radius * 0.5) {
-            // Если защитный щит активен — атака хищника полностью отражается!
+            // Если защитный щит активен — атака хищника полностью отражается! (ЗВУК №3)
             if (p.shieldTimer > 0) {
               const pushAngle = Math.atan2(npc.y - p.y, npc.x - p.x);
               npc.vx += Math.cos(pushAngle) * 5;
               npc.vy += Math.sin(pushAngle) * 5;
               p.vx -= Math.cos(pushAngle) * 2;
               p.vy -= Math.sin(pushAngle) * 2;
-              if (this.sound && this.sound.playEatSmall) this.sound.playEatSmall();
+              if (this.sound && this.sound.playOtherEvent) {
+                this.sound.playOtherEvent('shield');
+              } else if (this.sound && this.sound.playShieldDeflect) {
+                this.sound.playShieldDeflect();
+              }
               this.spawnBiteParticles(p.x, p.y, '#00e5ff');
               continue;
             }
@@ -792,7 +818,7 @@ class GameManager {
             this.updateHUD();
 
             if (p.lives > 0) {
-              // Игрок ранен, но жив! Даем щит неуязвимости на 3 секунды и сильный отброс
+              // Игрок ранен, но жив! Даем щит неуязвимости на 3 секунды и сильный отброс (ЗВУК №2А)
               p.hurtTimer = 45;
               p.shieldTimer = 180; // 3 сек неуязвимости
               const knockAngle = Math.atan2(p.y - npc.y, p.x - npc.x);
@@ -801,13 +827,22 @@ class GameManager {
               npc.vx -= Math.cos(knockAngle) * 4;
               npc.vy -= Math.sin(knockAngle) * 4;
 
-              if (this.sound && this.sound.playHurt) this.sound.playHurt();
+              if (this.sound && this.sound.playPlayerBitten) {
+                this.sound.playPlayerBitten();
+              } else if (this.sound && this.sound.playHurt) {
+                this.sound.playHurt();
+              }
               this.spawnBiteParticles(p.x, p.y, '#ff4757');
               const biteMsg = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('predatorBite') : '💔 УКУС ХИЩНИКА! (-1 Жизнь)';
               this.createFloatingText(biteMsg, p.x, p.y);
               continue;
             } else {
-              // Жизни исчерпаны — гибель
+              // Жизни исчерпаны — гибель: хищник проглатывает нашего героя (ЗВУК №2Б)
+              if (this.sound && this.sound.playPlayerSwallowed) {
+                this.sound.playPlayerSwallowed();
+              } else if (this.sound && this.sound.playGameOver) {
+                this.sound.playGameOver();
+              }
               const swallowMsg = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('predatorSwallowed') : 'Вас проглотил опасный хищник глубин!';
               this.triggerGameOver(swallowMsg);
               return;
@@ -889,7 +924,11 @@ class GameManager {
     this.player.evolutionGlow = 1;
     this.player.lives = this.player.maxLives || 3; // Полное исцеление при эволюции!
 
-    if (this.sound && this.sound.playEvolution) this.sound.playEvolution();
+    if (this.sound && this.sound.playOtherEvent) {
+      this.sound.playOtherEvent('evolution');
+    } else if (this.sound && this.sound.playEvolution) {
+      this.sound.playEvolution();
+    }
 
     if (this.dom.evoNewName) {
       this.dom.evoNewName.textContent = (typeof window !== 'undefined' && window.I18N)
@@ -926,7 +965,11 @@ class GameManager {
   triggerGameOver(reason) {
     this.isGameOver = true;
     this.isPlaying = false;
-    if (this.sound && this.sound.playGameOver) this.sound.playGameOver();
+    if (this.sound && this.sound.playPlayerSwallowed) {
+      this.sound.playPlayerSwallowed();
+    } else if (this.sound && this.sound.playGameOver) {
+      this.sound.playGameOver();
+    }
     if (this.sound && this.sound.stopAmbient) this.sound.stopAmbient();
 
     const causeEl = document.getElementById('gameover-cause');
@@ -953,7 +996,11 @@ class GameManager {
   }
 
   triggerVictory() {
-    this.sound.playEvolution();
+    if (this.sound && this.sound.playOtherEvent) {
+      this.sound.playOtherEvent('victory');
+    } else if (this.sound && this.sound.playEvolution) {
+      this.sound.playEvolution();
+    }
     const vicScore = document.getElementById('victory-score');
     if (vicScore) vicScore.textContent = this.score.toLocaleString();
     if (this.dom.victoryModal) this.dom.victoryModal.classList.remove('hidden');
