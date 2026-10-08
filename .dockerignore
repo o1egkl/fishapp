@@ -3,3 +3,6 @@
 *.log
 *.ps1
 README.md
+.edge_*
+capture.js
+test_*.js

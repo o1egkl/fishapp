@@ -98,23 +98,23 @@ class AssetManager {
     while (normAngle > Math.PI) normAngle -= Math.PI * 2;
     while (normAngle < -Math.PI) normAngle += Math.PI * 2;
 
-    // Определяем базовую ориентацию (рыба плывет влево или вправо)
+    // Определяем базовую ориентацию строго по курсу (рыба плывет влево или вправо)
     const isFacingLeft = Math.cos(normAngle) < 0;
-    const targetFacing = isFacingLeft ? -1 : 1;
-    const effFacing = (smoothFacing !== null && smoothFacing !== undefined) ? smoothFacing : targetFacing;
-    const facingDir = effFacing < 0 ? -1 : 1;
-    const absF = Math.abs(effFacing);
+    const facingSign = isFacingLeft ? -1 : 1;
 
-    // Плавное синусоидальное сжатие силуэта при развороте в 3D толще воды
-    const turnScaleX = facingDir * Math.max(0.18, Math.sin(Math.min(1, absF) * Math.PI * 0.5));
-    const turnScaleY = 1.0 + (1.0 - Math.min(1, absF)) * 0.08;
+    // Плавное синусоидальное сжатие силуэта при развороте в 3D
+    const absF = (smoothFacing !== null && smoothFacing !== undefined)
+      ? Math.min(1, Math.max(0.18, Math.abs(smoothFacing)))
+      : 1.0;
+    const turnScaleX = facingSign * Math.sin(absF * Math.PI * 0.5);
+    const turnScaleY = 1.0 + (1.0 - absF) * 0.08;
 
     // Угол поворота холста:
     // Нос исходного спрайта направлен вправо (+X), спинной плавник сверху (-Y).
-    // Если рыба развернута влево (facingDir === -1), спрайт масштабируется с turnScaleX < 0,
-    // поэтому для совмещения носа с курсом движения поворачиваем на (normAngle ± PI).
+    // Если рыба развернута влево (isFacingLeft === true), спрайт масштабируется с turnScaleX < 0,
+    // поэтому для строгого совмещения носа с курсом движения поворачиваем на (normAngle ± PI).
     // Это гарантирует, что нос ВСЕГДА направлен строго по ходу движения, а спина всегда сверху!
-    const rotAngle = facingDir === -1
+    const rotAngle = isFacingLeft
       ? (normAngle > 0 ? normAngle - Math.PI : normAngle + Math.PI)
       : normAngle;
 

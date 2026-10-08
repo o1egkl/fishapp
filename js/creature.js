@@ -246,18 +246,11 @@ class Fish {
       : this.turnSpeed;
     this.angle += diff * turnRate;
 
-    // Плавное отслеживание направления и наклона рыбы без переворачивания
-    const cosA = Math.cos(this.angle);
+    // Отслеживание направления (влево / вправо)
+    this.facing = Math.cos(this.angle) < 0 ? -1 : 1;
 
-    // Гистерезис (зона нечувствительности +/- 0.10)
-    if (cosA > 0.10) {
-      this.facing = 1;
-    } else if (cosA < -0.10) {
-      this.facing = -1;
-    }
-
-    // Плавный поворот тела в 3D (для игрока более отзывчивый)
-    const turnLerp = this.isPlayer ? 0.35 : 0.16;
+    // Плавный поворот тела в 3D
+    const turnLerp = this.isPlayer ? 0.38 : 0.18;
     this.smoothFacing += (this.facing - this.smoothFacing) * turnLerp;
     this.pitch = this.angle;
 
