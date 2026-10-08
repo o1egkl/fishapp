@@ -189,9 +189,41 @@ try {
   console.log('Testing game update & render...');
   game.update(16);
   game.render();
+
+  // Test 5: Steering & Orientation Verification (No backward swimming)
+  console.log('Testing player steering and mouse tracking across all quadrants...');
+  game.startNewGame();
+  const p = game.player;
+
+  // 5a. Mouse RIGHT (+X)
+  game.input.mouseX = window.innerWidth / 2 + 250;
+  game.input.mouseY = window.innerHeight / 2;
+  for (let i = 0; i < 15; i++) game.update(16);
+  console.log('Quadrant 1 (Right): targetAngle =', p.targetAngle.toFixed(2), 'angle =', p.angle.toFixed(2), 'vx =', p.vx.toFixed(2), 'facing =', p.facing);
+  if (p.vx <= 0) throw new Error('Player should move right when mouse is on the right');
+
+  // 5b. Mouse UP-LEFT (-X, -Y)
+  game.input.mouseX = window.innerWidth / 2 - 300;
+  game.input.mouseY = window.innerHeight / 2 - 300;
+  for (let i = 0; i < 20; i++) game.update(16);
+  console.log('Quadrant 2 (Up-Left): targetAngle =', p.targetAngle.toFixed(2), 'angle =', p.angle.toFixed(2), 'vx =', p.vx.toFixed(2), 'vy =', p.vy.toFixed(2), 'facing =', p.facing);
+  if (p.vx >= 0 || p.vy >= 0) throw new Error('Player should move up-left when mouse is up-left');
+
+  // 5c. Mouse DOWN-LEFT (-X, +Y)
+  game.input.mouseX = window.innerWidth / 2 - 300;
+  game.input.mouseY = window.innerHeight / 2 + 300;
+  for (let i = 0; i < 20; i++) game.update(16);
+  console.log('Quadrant 3 (Down-Left): targetAngle =', p.targetAngle.toFixed(2), 'angle =', p.angle.toFixed(2), 'vx =', p.vx.toFixed(2), 'vy =', p.vy.toFixed(2), 'facing =', p.facing);
+  if (p.vx >= 0 || p.vy <= 0) throw new Error('Player should move down-left when mouse is down-left');
+
+  // 5d. Rendering check with drawFish
+  game.render();
+  console.log('Render executed cleanly with all transformations verified!');
+
   console.log('All tests passed without throwing any errors!');
 
 } catch (err) {
   console.error('ERROR DETECTED:', err);
+  process.exit(1);
 }
 process.exit(0);

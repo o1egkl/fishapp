@@ -164,7 +164,8 @@ class Fish {
     this.radius = options.radius || (this.stage === 1 ? 32 : this.stage === 2 ? 50 : this.stage === 3 ? 82 : 125);
     this.maxSpeed = options.maxSpeed || 0.85;
     this.dashSpeed = options.dashSpeed || 1.75;
-    this.turnSpeed = options.turnSpeed || 0.065;
+    this.turnSpeed = options.turnSpeed || (this.isPlayer ? 0.24 : 0.065);
+    this.targetDist = options.targetDist !== undefined ? options.targetDist : 100;
 
     // Процедурный скелет (сегменты позвоночника)
     this.numSegments = options.numSegments || (this.species === 'shark' ? 10 : this.species === 'barracuda' ? 9 : 8);
@@ -204,7 +205,7 @@ class Fish {
     // Плавный 3D-разворот влево/вправо без переворачивания кверху брюхом
     this.facing = Math.cos(this.angle) >= 0 ? 1 : -1;
     this.smoothFacing = this.facing;
-    this.pitch = Math.atan2(Math.sin(this.angle), Math.abs(Math.cos(this.angle)));
+    this.pitch = this.angle;
   }
 
   update(worldWidth, worldHeight, player, otherFish, foods, speedMult = 1) {
@@ -235,29 +236,30 @@ class Fish {
     if (this.y < pad) { this.y = pad; this.vy = Math.abs(this.vy) * 0.4; }
     if (this.y > worldHeight - pad) { this.y = worldHeight - pad; this.vy = -Math.abs(this.vy) * 0.4; }
 
-    // Плавный неторопливый поворот
+    // Плавный поворот к цели: игрок поворачивается динамично и мгновенно слушается мышь
     let diff = this.targetAngle - this.angle;
     while (diff < -Math.PI) diff += Math.PI * 2;
     while (diff > Math.PI) diff -= Math.PI * 2;
-    this.angle += diff * this.turnSpeed;
+
+    const turnRate = this.isPlayer
+      ? (this.isDashing ? 0.32 : 0.25)
+      : this.turnSpeed;
+    this.angle += diff * turnRate;
 
     // Плавное отслеживание направления и наклона рыбы без переворачивания
     const cosA = Math.cos(this.angle);
-    const sinA = Math.sin(this.angle);
 
-    // Гистерезис (зона нечувствительности +/- 0.12), чтобы избежать дребезга при вертикальном плавании
-    if (cosA > 0.12) {
+    // Гистерезис (зона нечувствительности +/- 0.10)
+    if (cosA > 0.10) {
       this.facing = 1;
-    } else if (cosA < -0.12) {
+    } else if (cosA < -0.10) {
       this.facing = -1;
     }
 
-    // Плавный поворот тела в 3D
-    this.smoothFacing += (this.facing - this.smoothFacing) * 0.15;
-
-    // Плавный наклон носа вверх/вниз
-    const targetPitch = Math.atan2(sinA, Math.abs(cosA));
-    this.pitch += (targetPitch - this.pitch) * 0.18;
+    // Плавный поворот тела в 3D (для игрока более отзывчивый)
+    const turnLerp = this.isPlayer ? 0.35 : 0.16;
+    this.smoothFacing += (this.facing - this.smoothFacing) * turnLerp;
+    this.pitch = this.angle;
 
     // Спокойные, реалистичные колебания хвоста
     const swimFreq = (0.04 + speed * 0.035) * speedMult;
@@ -314,8 +316,22 @@ class Fish {
 
   updatePlayer() {
     const curSpeed = this.isDashing ? this.dashSpeed : this.maxSpeed;
-    this.vx += Math.cos(this.targetAngle) * (curSpeed * 0.09);
-    this.vy += Math.sin(this.targetAngle) * (curSpeed * 0.09);
+
+    // Расчет разницы между текущим направлением рыбы и целевым углом
+    let diff = this.targetAngle - this.angle;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+
+    // Движение вперед строго по направлению носа рыбы (this.angle)!
+    // Когда рыба еще разворачивается, тяга плавно модулируется, исключая неестественное движение задом наперед.
+    const forwardAlignment = Math.max(0.18, Math.cos(diff));
+    const distFactor = (this.targetDist !== undefined)
+      ? Math.min(1.0, Math.max(0.08, this.targetDist / 35))
+      : 1.0;
+
+    const accel = (curSpeed * 0.12) * forwardAlignment * distFactor;
+    this.vx += Math.cos(this.angle) * accel;
+    this.vy += Math.sin(this.angle) * accel;
   }
 
   updateAI(player, otherFish, foods) {

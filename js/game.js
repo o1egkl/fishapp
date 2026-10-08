@@ -127,10 +127,15 @@ class GameManager {
   bindEvents() {
     window.addEventListener('resize', () => this.resizeCanvas());
 
+    const updateMouse = (clientX, clientY) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.input.mouseX = clientX - rect.left;
+      this.input.mouseY = clientY - rect.top;
+    };
+
     // Мышь
     window.addEventListener('mousemove', (e) => {
-      this.input.mouseX = e.clientX;
-      this.input.mouseY = e.clientY;
+      updateMouse(e.clientX, e.clientY);
     });
 
     window.addEventListener('mousedown', (e) => {
@@ -305,20 +310,14 @@ class GameManager {
     window.addEventListener('touchstart', (e) => {
       if (e.target.closest('#hud-top') || e.target.closest('.modal-overlay') || e.target.closest('#mobile-controls')) return;
       const t = e.touches[0];
-      if (t) {
-        this.input.mouseX = t.clientX;
-        this.input.mouseY = t.clientY;
-      }
+      if (t) updateMouse(t.clientX, t.clientY);
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
       if (this.touch.active) return;
       if (e.target.closest('#hud-top') || e.target.closest('.modal-overlay') || e.target.closest('#mobile-controls')) return;
       const t = e.touches[0];
-      if (t) {
-        this.input.mouseX = t.clientX;
-        this.input.mouseY = t.clientY;
-      }
+      if (t) updateMouse(t.clientX, t.clientY);
     }, { passive: true });
   }
 
@@ -364,10 +363,13 @@ class GameManager {
       dashSpeed: stage1.dashSpeed,
       colors: stage1.colors,
       shieldTimer: 300, // 5 секунд защитного щита на старте
-      lives: 3
+      lives: 3,
+      turnSpeed: 0.24,
+      targetDist: 100
     });
     this.player.maxLives = 3;
     this.player.lives = 3;
+    this.player.turnSpeed = 0.24;
 
     this.maxBiomassAchieved = this.player.mass;
 
@@ -547,6 +549,7 @@ class GameManager {
     if (this.touch.active && this.touch.distance > 0.1) {
       // Сенсорный виртуальный джойстик
       this.player.targetAngle = this.touch.angle;
+      this.player.targetDist = 150;
     } else if (this.input.keys['KeyW'] || this.input.keys['KeyA'] || this.input.keys['KeyS'] || this.input.keys['KeyD'] ||
                this.input.keys['ArrowUp'] || this.input.keys['ArrowLeft'] || this.input.keys['ArrowDown'] || this.input.keys['ArrowRight']) {
       // Клавиатура WASD / Стрелки
@@ -558,12 +561,22 @@ class GameManager {
       if (this.input.keys['KeyD'] || this.input.keys['ArrowRight']) dx += 1;
       if (dx !== 0 || dy !== 0) {
         this.player.targetAngle = Math.atan2(dy, dx);
+        this.player.targetDist = 200;
       }
     } else {
       // Мышь / прямое касание
       const worldMouseX = this.camera.x + this.input.mouseX / this.camera.scale;
       const worldMouseY = this.camera.y + this.input.mouseY / this.camera.scale;
-      this.player.targetAngle = Math.atan2(worldMouseY - this.player.y, worldMouseX - this.player.x);
+      const dx = worldMouseX - this.player.x;
+      const dy = worldMouseY - this.player.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 8) {
+        this.player.targetAngle = Math.atan2(dy, dx);
+        this.player.targetDist = dist;
+      } else {
+        this.player.targetDist = 0;
+      }
     }
 
     // 2. Обновление игрока с учетом множителя скорости
@@ -832,6 +845,7 @@ class GameManager {
     this.player.species = stageData.species;
     this.player.maxSpeed = stageData.speed;
     this.player.dashSpeed = stageData.dashSpeed;
+    this.player.turnSpeed = 0.24;
     this.player.colors = stageData.colors || { body: stageData.color || '#00e5ff' };
     this.player.evolutionGlow = 1;
     this.player.lives = this.player.maxLives || 3; // Полное исцеление при эволюции!

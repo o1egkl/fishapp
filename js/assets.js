@@ -93,26 +93,38 @@ class AssetManager {
     const fishLength = radius * 2.8;
     const fishHeight = fishLength / b.aspect;
 
-    const cosAngle = Math.cos(angle);
-    const sinAngle = Math.sin(angle);
-    const defaultFacing = cosAngle < 0 ? -1 : 1;
-    const effFacing = (smoothFacing !== null && smoothFacing !== undefined) ? smoothFacing : defaultFacing;
-    const effPitch = (pitch !== null && pitch !== undefined) ? pitch : Math.atan2(sinAngle, Math.abs(cosAngle));
+    // Нормализация угла к диапазону [-PI, PI]
+    let normAngle = angle;
+    while (normAngle > Math.PI) normAngle -= Math.PI * 2;
+    while (normAngle < -Math.PI) normAngle += Math.PI * 2;
+
+    // Определяем базовую ориентацию (рыба плывет влево или вправо)
+    const isFacingLeft = Math.cos(normAngle) < 0;
+    const targetFacing = isFacingLeft ? -1 : 1;
+    const effFacing = (smoothFacing !== null && smoothFacing !== undefined) ? smoothFacing : targetFacing;
+    const facingDir = effFacing < 0 ? -1 : 1;
+    const absF = Math.abs(effFacing);
+
+    // Плавное синусоидальное сжатие силуэта при развороте в 3D толще воды
+    const turnScaleX = facingDir * Math.max(0.18, Math.sin(Math.min(1, absF) * Math.PI * 0.5));
+    const turnScaleY = 1.0 + (1.0 - Math.min(1, absF)) * 0.08;
+
+    // Угол поворота холста:
+    // Нос исходного спрайта направлен вправо (+X), спинной плавник сверху (-Y).
+    // Если рыба развернута влево (facingDir === -1), спрайт масштабируется с turnScaleX < 0,
+    // поэтому для совмещения носа с курсом движения поворачиваем на (normAngle ± PI).
+    // Это гарантирует, что нос ВСЕГДА направлен строго по ходу движения, а спина всегда сверху!
+    const rotAngle = facingDir === -1
+      ? (normAngle > 0 ? normAngle - Math.PI : normAngle + Math.PI)
+      : normAngle;
 
     ctx.save();
     ctx.translate(x, y);
 
-    // 1. Плавный наклон носа рыбы вверх/вниз по траектории (pitch)
-    ctx.rotate(effPitch);
+    // 1. Поворот строго по курсу движения рыбы (нос всегда смотрит вперед!)
+    ctx.rotate(rotAngle);
 
-    // 2. Плавный органичный 3D-разворот в воде без резкого переворота вверх тормашками!
-    const facingSign = Math.sign(effFacing) || 1;
-    const absFacing = Math.abs(effFacing);
-    // Плавное синусоидальное сжатие силуэта при развороте в 3D толще воды
-    const turnScaleX = facingSign * Math.max(0.18, Math.sin(Math.min(1, absFacing) * Math.PI * 0.5));
-    // Естественное легкое объемное утолщение при повороте анфас
-    const turnScaleY = 1.0 + (1.0 - Math.min(1, absFacing)) * 0.08;
-
+    // 2. Плавный органичный 3D-разворот в воде
     ctx.scale(turnScaleX, turnScaleY);
 
     // Мягкая биолюминесценция в неоновом режиме или для светящейся неон-тетры
