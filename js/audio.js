@@ -11,9 +11,13 @@ class SoundEngine {
     this.isMuted = false;
     this.initialized = false;
     this.ambientGain = null;
-    this.ambientOsc1 = null;
-    this.ambientOsc2 = null;
+    this.ambientSource = null;
+    this.ambientFilter = null;
+    this.ambientLfo1 = null;
+    this.ambientLfo2 = null;
     this.ambientStarted = false;
+    this.bubbleTimer = null;
+    this.oceanBuffer = null;
 
     // Индекс для переливчатых комбо-бульков при поедании планктона подряд
     this.bubbleNotes = [480, 540, 620, 720, 840, 960, 1100, 1280];
@@ -55,11 +59,69 @@ class SoundEngine {
     this.isMuted = !this.isMuted;
     if (this.ambientGain && this.ctx) {
       this.ambientGain.gain.setValueAtTime(
-        this.isMuted ? 0 : 0.07,
+        this.isMuted ? 0 : 0.14,
         this.ctx.currentTime
       );
     }
     return this.isMuted;
+  }
+
+  /**
+   * Генерация стерео-буфера шума воды (Pink & Brown Noise).
+   * В отличие от монотонных синтетических тонов, это физический,
+   * естественный акустический шум морского прибоя и подводных течений.
+   */
+  createOceanNoiseBuffer() {
+    const sampleRate = (this.ctx && this.ctx.sampleRate) || 44100;
+    const duration = 8; // 8-секундный стерео цикл
+    const bufferSize = sampleRate * duration;
+    let buffer = null;
+    try {
+      buffer = this.ctx.createBuffer(2, bufferSize, sampleRate);
+    } catch (e) {
+      return null;
+    }
+    if (!buffer) return null;
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
+    if (!left || !right) return null;
+
+    const len = Math.min(bufferSize, left.length);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = ch === 0 ? left : right;
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      let lastBrown = 0;
+
+      for (let i = 0; i < len; i++) {
+        const white = Math.random() * 2 - 1;
+
+        // Фильтр розового шума (Paul Kellet 1/f)
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        const pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+
+        // Коричневый шум (броуновское блуждание - масса толщи воды)
+        lastBrown = (lastBrown + (0.02 * white)) / 1.02;
+        const brown = lastBrown * 3.5;
+
+        // Композиция: глубинная толща воды + прибойная пена
+        data[i] = pink * 0.52 + brown * 0.48;
+      }
+
+      // Бесшовный кроссфейд 0.5 сек для незаметного циклического воспроизведения
+      const fadeSamples = Math.floor(Math.min(sampleRate * 0.5, len * 0.1));
+      for (let i = 0; i < fadeSamples; i++) {
+        const progress = i / fadeSamples;
+        const endIdx = len - fadeSamples + i;
+        data[i] = data[i] * progress + data[endIdx] * (1 - progress);
+      }
+    }
+    return buffer;
   }
 
   startAmbient() {
@@ -74,52 +136,151 @@ class SoundEngine {
         this.ctx.resume().catch(() => {});
       }
 
-      // Глубокий атмосферный подводный гул океана
-      const osc1 = this.ctx.createOscillator();
-      const osc2 = this.ctx.createOscillator();
-      const filter = this.ctx.createBiquadFilter();
+      // 1. Создаем или повторно используем буфер шума океана
+      if (!this.oceanBuffer) {
+        this.oceanBuffer = this.createOceanNoiseBuffer();
+      }
+
+      const now = this.ctx.currentTime;
+
+      // 2. Мастер-громкость океана
       this.ambientGain = this.ctx.createGain();
-
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(52, this.ctx.currentTime); // Басовый суб-тон
-
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(78, this.ctx.currentTime);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(130, this.ctx.currentTime);
-
-      this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.07, this.ctx.currentTime);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(this.ambientGain);
+      const targetVolume = this.isMuted ? 0 : 0.14;
+      this.ambientGain.gain.setValueAtTime(targetVolume, now);
       this.ambientGain.connect(this.ctx.destination);
 
-      osc1.start();
-      osc2.start();
+      if (this.oceanBuffer) {
+        // Источник натурального шума воды
+        const noiseSource = this.ctx.createBufferSource();
+        noiseSource.buffer = this.oceanBuffer;
+        noiseSource.loop = true;
 
-      this.ambientOsc1 = osc1;
-      this.ambientOsc2 = osc2;
+        // Фильтр глубины (отсекает резкий сухой верх, формируя подводный звук)
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, now);
+        filter.Q.setValueAtTime(1.8, now);
+
+        // Резонансный фильтр тела воды (объем подводной акустики)
+        const bodyFilter = this.ctx.createBiquadFilter();
+        bodyFilter.type = 'peaking';
+        bodyFilter.frequency.setValueAtTime(160, now);
+        if (bodyFilter.gain && bodyFilter.gain.setValueAtTime) {
+          bodyFilter.gain.setValueAtTime(4, now);
+        }
+        bodyFilter.Q.setValueAtTime(1.2, now);
+
+        // LFO 1: Накат и откат волн океана (~8.5 сек период волны)
+        const lfo1 = this.ctx.createOscillator();
+        lfo1.type = 'sine';
+        lfo1.frequency.setValueAtTime(0.118, now);
+
+        const lfo1Gain = this.ctx.createGain();
+        lfo1Gain.gain.setValueAtTime(220, now); // Модулирует частоту фильтра (от 100Гц до 540Гц)
+        lfo1.connect(lfo1Gain);
+        lfo1Gain.connect(filter.frequency);
+
+        // LFO 2: Медленное дыхание глубинных течений (~14.2 сек)
+        const lfo2 = this.ctx.createOscillator();
+        lfo2.type = 'sine';
+        lfo2.frequency.setValueAtTime(0.07, now);
+
+        const lfo2Gain = this.ctx.createGain();
+        lfo2Gain.gain.setValueAtTime(110, now);
+        lfo2.connect(lfo2Gain);
+        lfo2Gain.connect(filter.frequency);
+
+        // Цепочка: Шум воды -> Резонанс массы -> Волновой фильтр -> Мастер-выход
+        noiseSource.connect(bodyFilter);
+        bodyFilter.connect(filter);
+        filter.connect(this.ambientGain);
+
+        noiseSource.start(now);
+        lfo1.start(now);
+        lfo2.start(now);
+
+        this.ambientSource = noiseSource;
+        this.ambientFilter = filter;
+        this.ambientLfo1 = lfo1;
+        this.ambientLfo2 = lfo2;
+      }
+
       this.ambientStarted = true;
+
+      // 3. Запускаем мягкие фоновые микро-пузырьки рифа
+      this.startAmbientBubbles();
     } catch (e) {
       console.warn('Ambient start failed:', e);
     }
   }
 
+  startAmbientBubbles() {
+    this.stopAmbientBubbles();
+    const scheduleNext = () => {
+      if (!this.ambientStarted || this.isMuted) return;
+      const delay = 2600 + Math.random() * 3800;
+      this.bubbleTimer = setTimeout(() => {
+        if (this.ambientStarted && !this.isMuted) {
+          this.playSubtleAmbientBubble();
+          scheduleNext();
+        }
+      }, delay);
+    };
+    scheduleNext();
+  }
+
+  stopAmbientBubbles() {
+    if (this.bubbleTimer) {
+      clearTimeout(this.bubbleTimer);
+      this.bubbleTimer = null;
+    }
+  }
+
+  playSubtleAmbientBubble() {
+    if (!this.ctx || this.isMuted || !this.ambientStarted) return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      const freqStart = 650 + Math.random() * 450;
+      const freqEnd = freqStart * 1.35;
+      const dur = 0.08 + Math.random() * 0.06;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freqStart, now);
+      osc.frequency.exponentialRampToValueAtTime(freqEnd, now + dur);
+
+      gain.gain.setValueAtTime(0.018, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      osc.connect(gain);
+      gain.connect(this.ambientGain || this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + dur);
+    } catch (e) {}
+  }
+
   stopAmbient() {
+    this.stopAmbientBubbles();
+
     if (this.ambientGain && this.ctx) {
       try {
         this.ambientGain.gain.setValueAtTime(0, this.ctx.currentTime);
       } catch (e) {}
     }
-    if (this.ambientOsc1) {
-      try { this.ambientOsc1.stop(); } catch (e) {}
-      this.ambientOsc1 = null;
+    if (this.ambientSource) {
+      try { this.ambientSource.stop(); } catch (e) {}
+      this.ambientSource = null;
     }
-    if (this.ambientOsc2) {
-      try { this.ambientOsc2.stop(); } catch (e) {}
-      this.ambientOsc2 = null;
+    if (this.ambientLfo1) {
+      try { this.ambientLfo1.stop(); } catch (e) {}
+      this.ambientLfo1 = null;
+    }
+    if (this.ambientLfo2) {
+      try { this.ambientLfo2.stop(); } catch (e) {}
+      this.ambientLfo2 = null;
     }
     this.ambientGain = null;
     this.ambientStarted = false;
