@@ -14,6 +14,7 @@ Thumbs.db
 desktop.ini
 
 # Scratch / Diagnostic runners (optional local tools)
+scratch/
 test_cdp.js
 test_edge_local.js
 run_diag.js

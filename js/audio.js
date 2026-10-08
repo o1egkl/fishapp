@@ -11,6 +11,9 @@ class SoundEngine {
     this.isMuted = false;
     this.initialized = false;
     this.ambientGain = null;
+    this.ambientOsc1 = null;
+    this.ambientOsc2 = null;
+    this.ambientStarted = false;
 
     // Индекс для переливчатых комбо-бульков при поедании планктона подряд
     this.bubbleNotes = [480, 540, 620, 720, 840, 960, 1100, 1280];
@@ -33,7 +36,6 @@ class SoundEngine {
       if (this.ctx.state === 'suspended') {
         this.ctx.resume().catch(() => {});
       }
-      this.startAmbient();
     } catch (e) {
       console.warn('Web Audio API initialization:', e);
     }
@@ -61,32 +63,66 @@ class SoundEngine {
   }
 
   startAmbient() {
-    if (!this.ctx || this.isMuted) return;
+    if (this.ambientStarted || this.isMuted) return;
+    if (!this.ctx) {
+      this.init();
+    }
+    if (!this.ctx) return;
 
-    // Глубокий атмосферный подводный гул океана
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const filter = this.ctx.createBiquadFilter();
-    this.ambientGain = this.ctx.createGain();
+    try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
 
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(52, this.ctx.currentTime); // Басовый суб-тон
+      // Глубокий атмосферный подводный гул океана
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      this.ambientGain = this.ctx.createGain();
 
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(78, this.ctx.currentTime);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(52, this.ctx.currentTime); // Басовый суб-тон
 
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(130, this.ctx.currentTime);
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(78, this.ctx.currentTime);
 
-    this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.07, this.ctx.currentTime);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(130, this.ctx.currentTime);
 
-    osc1.connect(filter);
-    osc2.connect(filter);
-    filter.connect(this.ambientGain);
-    this.ambientGain.connect(this.ctx.destination);
+      this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.07, this.ctx.currentTime);
 
-    osc1.start();
-    osc2.start();
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(this.ambientGain);
+      this.ambientGain.connect(this.ctx.destination);
+
+      osc1.start();
+      osc2.start();
+
+      this.ambientOsc1 = osc1;
+      this.ambientOsc2 = osc2;
+      this.ambientStarted = true;
+    } catch (e) {
+      console.warn('Ambient start failed:', e);
+    }
+  }
+
+  stopAmbient() {
+    if (this.ambientGain && this.ctx) {
+      try {
+        this.ambientGain.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch (e) {}
+    }
+    if (this.ambientOsc1) {
+      try { this.ambientOsc1.stop(); } catch (e) {}
+      this.ambientOsc1 = null;
+    }
+    if (this.ambientOsc2) {
+      try { this.ambientOsc2.stop(); } catch (e) {}
+      this.ambientOsc2 = null;
+    }
+    this.ambientGain = null;
+    this.ambientStarted = false;
   }
 
   /**
@@ -425,14 +461,3 @@ class SoundEngine {
 
 // Экспортируем глобальный синглтон
 window.soundEngine = new SoundEngine();
-
-// Автоматическая разблокировка аудиоконтекста браузера при первом клике или нажатии
-const autoUnlockAudio = () => {
-  if (window.soundEngine) {
-    window.soundEngine.init();
-  }
-};
-window.addEventListener('click', autoUnlockAudio, { once: true, passive: true });
-window.addEventListener('keydown', autoUnlockAudio, { once: true, passive: true });
-window.addEventListener('touchstart', autoUnlockAudio, { once: true, passive: true });
-window.addEventListener('mousedown', autoUnlockAudio, { once: true, passive: true });

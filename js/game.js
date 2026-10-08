@@ -368,6 +368,12 @@ class GameManager {
     this.isPlaying = true;
     this.freeplayMode = false;
 
+    // Звуковое окружение включается строго при фактическом старте игры
+    if (this.sound) {
+      this.sound.init();
+      this.sound.startAmbient();
+    }
+
     // Создаем игрока в центре океана с 6 секундами защитного щита
     const stage1 = EVOLUTION_STAGES[0];
     this.player = new Fish(this.worldWidth / 2, this.worldHeight / 2, {
@@ -535,6 +541,11 @@ class GameManager {
     if (this.isGameOver || !this.isPlaying) return;
     this.isPaused = !this.isPaused;
     this.dom.pauseModal.classList.toggle('hidden', !this.isPaused);
+    if (this.sound && this.sound.ambientGain && this.sound.ctx && !this.sound.isMuted) {
+      try {
+        this.sound.ambientGain.gain.setValueAtTime(this.isPaused ? 0.02 : 0.07, this.sound.ctx.currentTime);
+      } catch (e) {}
+    }
   }
 
   loop(currentTime) {
@@ -914,7 +925,9 @@ class GameManager {
 
   triggerGameOver(reason) {
     this.isGameOver = true;
+    this.isPlaying = false;
     if (this.sound && this.sound.playGameOver) this.sound.playGameOver();
+    if (this.sound && this.sound.stopAmbient) this.sound.stopAmbient();
 
     const causeEl = document.getElementById('gameover-cause');
     if (causeEl) causeEl.textContent = reason;
