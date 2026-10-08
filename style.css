@@ -347,6 +347,53 @@ body.theme-neon .theme-btn.active {
   color: #010810;
 }
 
+/* Переключатель языка (RU | EN | עב) */
+.lang-switcher {
+  display: flex;
+  background: rgba(0, 0, 0, 0.38);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 2px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--theme-text-muted);
+  font-size: 11px;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  letter-spacing: 0.5px;
+}
+
+.lang-btn:hover {
+  color: var(--theme-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-btn.active {
+  background: var(--theme-accent);
+  color: #03131e;
+  font-weight: 800;
+  box-shadow: 0 0 10px var(--theme-accent-glow);
+}
+
+body.theme-sunset .lang-btn.active {
+  color: #1a0812;
+}
+
+body.theme-neon .lang-btn.active {
+  color: #010810;
+}
+
 .icon-action-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -759,6 +806,13 @@ body.theme-neon .theme-btn.active {
   text-align: left;
 }
 
+/* Выбор языка в стартовом окне */
+.lang-select-preview {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.lang-select-preview label,
 .theme-select-preview label {
   display: block;
   font-size: 11px;
@@ -766,6 +820,45 @@ body.theme-neon .theme-btn.active {
   color: var(--theme-text-muted);
   margin-bottom: 8px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lang-choice-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.choice-lang-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--theme-text-primary);
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.choice-lang-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.choice-lang-card.active {
+  border-color: var(--theme-accent);
+  background: rgba(0, 210, 255, 0.18);
+  box-shadow: 0 0 15px var(--theme-accent-glow);
+}
+
+.lang-flag {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .theme-choice-row {
@@ -1082,4 +1175,87 @@ body.theme-neon .btn-primary {
   .modal-header h1 {
     font-size: 24px;
   }
+}
+
+/* ==========================================================
+   RTL SUPPORT (HEBREW / עברית)
+   ========================================================== */
+html[lang="he"],
+body.rtl-layout {
+  font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] .hud-card {
+  direction: rtl;
+}
+
+html[dir="rtl"] .hud-label,
+html[dir="rtl"] .stat-label,
+html[dir="rtl"] .progress-title,
+html[dir="rtl"] .radar-title,
+html[dir="rtl"] .boost-title {
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] .radar-hud {
+  direction: rtl;
+  left: auto;
+  right: 14px;
+}
+
+html[dir="rtl"] .boost-card {
+  direction: rtl;
+  right: auto;
+  left: 14px;
+}
+
+html[dir="rtl"] #touch-joystick-area {
+  left: auto;
+  right: 18px;
+}
+
+html[dir="rtl"] #mobile-dash-btn {
+  right: auto;
+  left: 18px;
+}
+
+html[dir="rtl"] .rules-grid,
+html[dir="rtl"] .controls-guide,
+html[dir="rtl"] .modal-content,
+html[dir="rtl"] .modal-window,
+html[dir="rtl"] .lang-select-preview,
+html[dir="rtl"] .theme-select-preview {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .rule-box {
+  text-align: right;
+}
+
+html[dir="rtl"] .control-col {
+  text-align: right;
+}
+
+html[dir="rtl"] .end-stat {
+  direction: rtl;
+}
+
+html[dir="rtl"] .progress-labels,
+html[dir="rtl"] .boost-header,
+html[dir="rtl"] .radar-header {
+  direction: rtl;
+}
+
+/* Гарантируем строгую физическую консистентность холстов и шкал */
+#game-canvas, #radar-canvas, #evo-preview-canvas {
+  direction: ltr !important;
+}
+
+.progress-bar-wrapper, .boost-bar-wrapper {
+  direction: ltr !important;
 }

@@ -55,7 +55,9 @@ global.document = {
   }),
   querySelectorAll: () => [],
   querySelector: () => null,
-  addEventListener: () => {}
+  addEventListener: () => {},
+  documentElement: { lang: 'ru', dir: 'ltr' },
+  body: { classList: { add: () => {}, remove: () => {} } }
 };
 
 global.performance = { now: () => Date.now() };
@@ -109,6 +111,7 @@ global.innerHeight = 900;
 
 try {
   // Load scripts in order
+  require('./js/i18n.js');
   require('./js/audio.js');
   require('./js/assets.js');
   require('./js/creature.js');
@@ -117,6 +120,33 @@ try {
   require('./js/game.js');
 
   console.log('Scripts loaded successfully!');
+
+  // Validate i18n
+  console.log('Testing multilingual translations (ru, en, he)...');
+  const i18n = global.window.I18N;
+  if (!i18n) throw new Error('I18N engine not found on window!');
+
+  // Russian
+  i18n.setLanguage('ru');
+  if (i18n.t('startGame') !== 'НАЧАТЬ ПОГРУЖЕНИЕ') throw new Error('RU translation mismatch');
+  if (i18n.getSpeciesName('neontetra') !== 'Неоновая Тетра') throw new Error('RU species mismatch');
+  console.log('  RU verified: title =', i18n.t('gameTitle'), 'dir =', global.document.documentElement ? global.document.documentElement.dir : 'ltr');
+
+  // English
+  i18n.setLanguage('en');
+  if (i18n.t('startGame') !== 'START DIVE') throw new Error('EN translation mismatch');
+  if (i18n.getSpeciesName('neontetra') !== 'Neon Tetra') throw new Error('EN species mismatch');
+  console.log('  EN verified: title =', i18n.t('gameTitle'), 'species =', i18n.getSpeciesName('shark'));
+
+  // Hebrew
+  i18n.setLanguage('he');
+  if (i18n.t('startGame') !== 'התחלת צלילה') throw new Error('HE translation mismatch');
+  if (i18n.getSpeciesName('neontetra') !== 'טטרה ניאון') throw new Error('HE species mismatch');
+  if (!i18n.isRTL()) throw new Error('HE should be RTL');
+  console.log('  HE verified: title =', i18n.t('gameTitle'), 'isRTL =', i18n.isRTL());
+
+  // Restore default for gameplay test
+  i18n.setLanguage('ru');
 
   const game = window.game || new GameManager();
   console.log('Game initialized!');

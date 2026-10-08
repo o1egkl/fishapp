@@ -7,8 +7,8 @@
   <meta name="description" content="Увлекательная подводная игра про эволюцию рыбки. Пожирайте планктон, моллюсков и мелких рыб, растите и исследуйте глубины океана в 3 режимах освещения!">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.1">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&family=Rubik:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2.2">
 </head>
 <body>
   <div id="game-container">
@@ -20,15 +20,15 @@
       <div class="hud-card stage-badge-container">
         <div class="stage-icon" id="stage-icon">🐟</div>
         <div class="stage-info">
-          <span class="hud-label">СТАДИЯ <span id="stage-num">1</span></span>
+          <span class="hud-label"><span data-i18n="stage">СТАДИЯ</span> <span id="stage-num">1</span></span>
           <span class="hud-value" id="stage-name">Крошечный Малёк</span>
         </div>
       </div>
 
       <div class="hud-card progress-card">
         <div class="progress-labels">
-          <span class="progress-title">БИОМАССА & РОСТ</span>
-          <span class="progress-numbers"><span id="current-mass">10</span> / <span id="target-mass">100</span> г</span>
+          <span class="progress-title" data-i18n="biomassGrowth">БИОМАССА & РОСТ</span>
+          <span class="progress-numbers"><span id="current-mass">10</span> / <span id="target-mass">100</span> <span data-i18n="unitG">г</span></span>
         </div>
         <div class="progress-bar-wrapper">
           <div id="growth-progress-bar" class="progress-bar-fill"></div>
@@ -37,24 +37,24 @@
       </div>
 
       <div class="hud-card stats-card">
-        <div class="stat-item" id="lives-stat-item" title="Запас жизней вашей рыбы (выдерживает укусы крупных хищников)">
+        <div class="stat-item" id="lives-stat-item" data-i18n-title="livesTooltip" title="Запас жизней вашей рыбы (выдерживает укусы крупных хищников)">
           <span class="stat-icon">❤️</span>
           <div class="stat-content">
-            <span class="stat-label">Жизни</span>
+            <span class="stat-label" data-i18n="lives">Жизни</span>
             <span class="stat-val lives-hearts" id="hud-lives">❤️❤️❤️</span>
           </div>
         </div>
         <div class="stat-item">
           <span class="stat-icon">📏</span>
           <div class="stat-content">
-            <span class="stat-label">Размер</span>
+            <span class="stat-label" data-i18n="size">Размер</span>
             <span class="stat-val" id="fish-length">12 см</span>
           </div>
         </div>
         <div class="stat-item">
           <span class="stat-icon">🏆</span>
           <div class="stat-content">
-            <span class="stat-label">Счёт</span>
+            <span class="stat-label" data-i18n="score">Счёт</span>
             <span class="stat-val" id="hud-score">0</span>
           </div>
         </div>
@@ -62,30 +62,37 @@
 
       <!-- Кнопки управления и режимов -->
       <div class="hud-card controls-card">
+        <!-- Селектор языка (RU | EN | עב) -->
+        <div class="lang-switcher" role="group" aria-label="Язык / Language / שפה">
+          <button id="lang-ru-btn" class="lang-btn active" data-lang="ru" title="Русский">RU</button>
+          <button id="lang-en-btn" class="lang-btn" data-lang="en" title="English">EN</button>
+          <button id="lang-he-btn" class="lang-btn" data-lang="he" title="עברית">עב</button>
+        </div>
+
         <!-- Селектор освещения -->
         <div class="theme-switcher" role="group" aria-label="Режимы освещения">
-          <button id="theme-day-btn" class="theme-btn active" title="Дневной риф (Солнечные лучи)" data-theme="day">
-            ☀️ <span class="theme-btn-text">День</span>
+          <button id="theme-day-btn" class="theme-btn active" data-i18n-title="dayTitle" title="Дневной риф (Солнечные лучи)" data-theme="day">
+            ☀️ <span class="theme-btn-text" data-i18n="day">День</span>
           </button>
-          <button id="theme-sunset-btn" class="theme-btn" title="Золотой закат (Теплый свет)" data-theme="sunset">
-            🌅 <span class="theme-btn-text">Закат</span>
+          <button id="theme-sunset-btn" class="theme-btn" data-i18n-title="sunsetTitle" title="Золотой закат (Теплый свет)" data-theme="sunset">
+            🌅 <span class="theme-btn-text" data-i18n="sunset">Закат</span>
           </button>
-          <button id="theme-neon-btn" class="theme-btn" title="Абиссальный неон (Биолюминесценция)" data-theme="neon">
-            🌌 <span class="theme-btn-text">Неон</span>
+          <button id="theme-neon-btn" class="theme-btn" data-i18n-title="neonTitle" title="Абиссальный неон (Биолюминесценция)" data-theme="neon">
+            🌌 <span class="theme-btn-text" data-i18n="neon">Неон</span>
           </button>
         </div>
 
         <!-- Селектор скорости -->
         <div class="speed-switcher" role="group" aria-label="Скорость игры">
-          <button id="speed-toggle-btn" class="theme-btn" title="Переключить скорость плавания (Медленно / Норма / Быстро)">
+          <button id="speed-toggle-btn" class="theme-btn" data-i18n-title="speedTitle" title="Переключить скорость плавания (Медленно / Норма / Быстро)">
             <span id="speed-icon">🐢</span> <span id="speed-val-text">0.5x</span>
           </button>
         </div>
 
-        <button id="sound-btn" class="icon-action-btn" title="Включить / Выключить звук" aria-label="Звук">
+        <button id="sound-btn" class="icon-action-btn" data-i18n-title="soundTitle" data-i18n-aria="soundAria" title="Включить / Выключить звук" aria-label="Звук">
           <span id="sound-icon">🔊</span>
         </button>
-        <button id="pause-btn" class="icon-action-btn" title="Пауза" aria-label="Пауза">
+        <button id="pause-btn" class="icon-action-btn" data-i18n-title="pauseTitle" data-i18n-aria="pauseAria" title="Пауза" aria-label="Пауза">
           ⏸️
         </button>
       </div>
@@ -94,21 +101,21 @@
     <!-- Радар опасности и глубины (Слева внизу) -->
     <div id="radar-container" class="radar-hud">
       <div class="radar-header">
-        <span class="radar-title">ЭХОЛОТ ГЛУБИН</span>
-        <span class="depth-indicator"><span id="depth-meter">15</span> м</span>
+        <span class="radar-title" data-i18n="depthSonar">ЭХОЛОТ ГЛУБИН</span>
+        <span class="depth-indicator"><span id="depth-meter">15</span> <span data-i18n="unitM">м</span></span>
       </div>
       <canvas id="radar-canvas" width="130" height="130"></canvas>
       <div class="radar-legend">
-        <span class="legend-dot green"></span>Добыча
-        <span class="legend-dot red"></span>Угроза
-        <span class="legend-dot gold"></span>Моллюски
+        <span class="legend-dot green"></span><span data-i18n="prey">Добыча</span>
+        <span class="legend-dot red"></span><span data-i18n="threat">Угроза</span>
+        <span class="legend-dot gold"></span><span data-i18n="mollusks">Моллюски</span>
       </div>
     </div>
 
     <!-- Индикатор энергии рывка (Справа внизу) -->
     <div id="boost-hud" class="boost-card">
       <div class="boost-header">
-        <span class="boost-title">РЫВОК [ПРОБЕЛ / КЛИК]</span>
+        <span class="boost-title" data-i18n="dashHud">РЫВОК [ПРОБЕЛ / КЛИК]</span>
         <span id="boost-pct">100%</span>
       </div>
       <div class="boost-bar-wrapper">
@@ -123,16 +130,16 @@
           <div id="joystick-stick"></div>
         </div>
       </div>
-      <button id="mobile-dash-btn" aria-label="Рывок">
+      <button id="mobile-dash-btn" data-i18n-aria="dashMobile" aria-label="Рывок">
         <span>⚡</span>
-        <small>РЫВОК</small>
+        <small data-i18n="dashMobile">РЫВОК</small>
       </button>
     </div>
 
     <!-- Всплывающие предупреждения об угрозе -->
     <div id="danger-alert" class="danger-banner hidden">
       <span class="danger-pulse-icon">⚠️</span>
-      <span class="danger-text">ПРИБЛИЖАЕТСЯ КРУПНЫЙ ХИЩНИК!</span>
+      <span class="danger-text" data-i18n="dangerPredator">ПРИБЛИЖАЕТСЯ КРУПНЫЙ ХИЩНИК!</span>
     </div>
 
     <!-- Всплывающие уведомления о росте -->
@@ -144,53 +151,72 @@
         <div class="modal-header">
           <div class="ocean-logo">🌊</div>
           <h1>AquaGenesis</h1>
-          <p class="tagline">Эволюция в Глубинах Океана</p>
+          <p class="tagline" data-i18n="gameTagline">Эволюция в Глубинах Океана</p>
         </div>
 
         <div class="modal-content">
           <div class="rules-grid">
             <div class="rule-box">
               <span class="rule-icon">🦐</span>
-              <h3>Питайтесь</h3>
-              <p>Поедайте планктон, моллюсков на дне и рыбок меньшего размера, чтобы накапливать биомассу.</p>
+              <h3 data-i18n="ruleFeedTitle">Питайтесь</h3>
+              <p data-i18n="ruleFeedDesc">Поедайте планктон, моллюсков на дне и рыбок меньшего размера, чтобы накапливать биомассу.</p>
             </div>
             <div class="rule-box">
               <span class="rule-icon">🦈</span>
-              <h3>Выживайте</h3>
-              <p>Остерегайтесь рыб больше вас! Следите за красными сигналами эхолота и прячьтесь в водорослях.</p>
+              <h3 data-i18n="ruleSurviveTitle">Выживайте</h3>
+              <p data-i18n="ruleSurviveDesc">Остерегайтесь рыб больше вас! Следите за красными сигналами эхолота и прячьтесь в водорослях.</p>
             </div>
             <div class="rule-box">
               <span class="rule-icon">🧬</span>
-              <h3>Эволюционируйте</h3>
-              <p>Преодолейте 4 эволюционные ступени: от беззащитного малька до мифического Левиафана Океана!</p>
+              <h3 data-i18n="ruleEvolveTitle">Эволюционируйте</h3>
+              <p data-i18n="ruleEvolveDesc">Преодолейте 4 эволюционные ступени: от беззащитного малька до мифического Левиафана Океана!</p>
             </div>
           </div>
 
           <div class="controls-guide">
             <div class="control-col">
-              <strong>💻 На Компьютере:</strong>
-              <p>Мышь — плыть за курсором<br>Пробел / Левый клик — турбо-рывок<br>WASD / Стрелки — ручное плавание</p>
+              <strong data-i18n="controlsPcTitle">💻 На Компьютере:</strong>
+              <p data-i18n-html="controlsPcDesc">Мышь — плыть за курсором<br>Пробел / Левый клик — турбо-рывок<br>WASD / Стрелки — ручное плавание</p>
             </div>
             <div class="control-col">
-              <strong>📱 На Телефоне / Планшете:</strong>
-              <p>Виртуальный джойстик слева (или касание в любом месте)<br>Кнопка ⚡ справа — рывок</p>
+              <strong data-i18n="controlsMobileTitle">📱 На Телефоне / Планшете:</strong>
+              <p data-i18n-html="controlsMobileDesc">Виртуальный джойстик слева (или касание в любом месте)<br>Кнопка ⚡ справа — рывок</p>
+            </div>
+          </div>
+
+          <!-- Выбор языка в стартовом окне -->
+          <div class="lang-select-preview">
+            <label id="start-lang-label" data-i18n="chooseLanguage">Язык игры / Language / שפה:</label>
+            <div class="lang-choice-row">
+              <button class="choice-lang-card active" data-lang="ru">
+                <span class="lang-flag">🇷🇺</span>
+                <span>Русский</span>
+              </button>
+              <button class="choice-lang-card" data-lang="en">
+                <span class="lang-flag">🇬🇧</span>
+                <span>English</span>
+              </button>
+              <button class="choice-lang-card" data-lang="he">
+                <span class="lang-flag">🇮🇱</span>
+                <span>עברית</span>
+              </button>
             </div>
           </div>
 
           <div class="theme-select-preview">
-            <label>Выберите начальное освещение:</label>
+            <label data-i18n="chooseLighting">Выберите начальное освещение:</label>
             <div class="theme-choice-row">
               <button class="choice-theme-card active" data-theme="day">
                 <span class="theme-thumb day-thumb"></span>
-                <span>☀️ День</span>
+                <span>☀️ <span data-i18n="day">День</span></span>
               </button>
               <button class="choice-theme-card" data-theme="sunset">
                 <span class="theme-thumb sunset-thumb"></span>
-                <span>🌅 Закат</span>
+                <span>🌅 <span data-i18n="sunset">Закат</span></span>
               </button>
               <button class="choice-theme-card" data-theme="neon">
                 <span class="theme-thumb neon-thumb"></span>
-                <span>🌌 Неон</span>
+                <span>🌌 <span data-i18n="neon">Неон</span></span>
               </button>
             </div>
           </div>
@@ -198,7 +224,7 @@
 
         <div class="modal-footer">
           <button id="start-game-btn" class="btn-primary">
-            <span>НАЧАТЬ ПОГРУЖЕНИЕ</span>
+            <span data-i18n="startGame">НАЧАТЬ ПОГРУЖЕНИЕ</span>
             <span class="btn-shine"></span>
           </button>
         </div>
@@ -209,7 +235,7 @@
     <div id="evolution-modal" class="modal-overlay hidden">
       <div class="modal-window glass-panel evolution-panel">
         <div class="evo-sparkles">✨ 🧬 ✨</div>
-        <h2 class="evo-title">НОВАЯ ЭВОЛЮЦИОННАЯ ФОРМА!</h2>
+        <h2 class="evo-title" data-i18n="evoModalTitle">НОВАЯ ЭВОЛЮЦИОННАЯ ФОРМА!</h2>
         <div class="evo-preview-box">
           <canvas id="evo-preview-canvas" width="220" height="140"></canvas>
         </div>
@@ -217,13 +243,13 @@
         <p id="evo-desc" class="evo-desc">Ваши челюсти окрепли, а спинной плавник позволяет совершать стремительные атаки!</p>
 
         <div class="evo-perks">
-          <div class="perk-badge">⚡ Скорость +25%</div>
-          <div class="perk-badge">🦪 Раскрытие крупных раковин</div>
-          <div class="perk-badge">👁️ Дальность эхолота +30%</div>
+          <div class="perk-badge" data-i18n="perkSpeed">⚡ Скорость +25%</div>
+          <div class="perk-badge" data-i18n="perkShells">🦪 Раскрытие крупных раковин</div>
+          <div class="perk-badge" data-i18n="perkSonar">👁️ Дальность эхолота +30%</div>
         </div>
 
         <button id="continue-evo-btn" class="btn-primary">
-          <span>ПРОДОЛЖИТЬ ОХОТУ</span>
+          <span data-i18n="continueHunt">ПРОДОЛЖИТЬ ОХОТУ</span>
         </button>
       </div>
     </div>
@@ -231,11 +257,11 @@
     <!-- МОДАЛЬНОЕ ОКНО ПАУЗЫ -->
     <div id="pause-modal" class="modal-overlay hidden">
       <div class="modal-window glass-panel pause-panel">
-        <h2>ИГРА НА ПАУЗЕ</h2>
-        <p>Океан замер во времени</p>
+        <h2 data-i18n="gamePaused">ИГРА НА ПАУЗЕ</h2>
+        <p data-i18n="oceanFrozen">Океан замер во времени</p>
         <div class="pause-actions">
-          <button id="resume-btn" class="btn-primary">ПРОДОЛЖИТЬ</button>
-          <button id="restart-from-pause-btn" class="btn-secondary">НАЧАТЬ ЗАНОВО</button>
+          <button id="resume-btn" class="btn-primary" data-i18n="resumeBtn">ПРОДОЛЖИТЬ</button>
+          <button id="restart-from-pause-btn" class="btn-secondary" data-i18n="restartBtn">НАЧАТЬ ЗАНОВО</button>
         </div>
       </div>
     </div>
@@ -244,30 +270,30 @@
     <div id="gameover-modal" class="modal-overlay hidden">
       <div class="modal-window glass-panel gameover-panel">
         <div class="gameover-icon">💀</div>
-        <h2>ВАС ПРОГЛОТИЛИ!</h2>
-        <p id="gameover-cause">Более крупный хищник оказался быстрее и беспощаднее.</p>
+        <h2 data-i18n="swallowedTitle">ВАС ПРОГЛОТИЛИ!</h2>
+        <p id="gameover-cause" data-i18n="swallowedDefault">Более крупный хищник оказался быстрее и беспощаднее.</p>
 
         <div class="end-stats-box">
           <div class="end-stat">
-            <span class="lbl">Достигнутый размер:</span>
+            <span class="lbl" data-i18n="finalLength">Достигнутый размер:</span>
             <span id="final-length" class="val">18 см</span>
           </div>
           <div class="end-stat">
-            <span class="lbl">Максимальная биомасса:</span>
+            <span class="lbl" data-i18n="finalMass">Максимальная биомасса:</span>
             <span id="final-mass" class="val">120 г</span>
           </div>
           <div class="end-stat">
-            <span class="lbl">Съедено добычи:</span>
+            <span class="lbl" data-i18n="finalEaten">Съедено добычи:</span>
             <span id="final-eaten" class="val">24</span>
           </div>
           <div class="end-stat highlight">
-            <span class="lbl">Итоговый Счёт:</span>
+            <span class="lbl" data-i18n="finalScore">Итоговый Счёт:</span>
             <span id="final-score" class="val">1 420</span>
           </div>
         </div>
 
         <div class="pause-actions">
-          <button id="restart-btn" class="btn-primary">ВОЗРОДИТЬСЯ В ОКЕАНЕ</button>
+          <button id="restart-btn" class="btn-primary" data-i18n="respawnBtn">ВОЗРОДИТЬСЯ В ОКЕАНЕ</button>
         </div>
       </div>
     </div>
@@ -276,29 +302,30 @@
     <div id="victory-modal" class="modal-overlay hidden">
       <div class="modal-window glass-panel victory-panel">
         <div class="victory-icon">👑 🐋 🌊</div>
-        <h2>ВЕРШИНА ПИЩЕВОЙ ЦЕПИ!</h2>
-        <p>Вы эволюционировали в Легендарного Левиафана Океана! Ни одно создание бездны больше не способно бросить вам вызов!</p>
+        <h2 data-i18n="victoryTitle">ВЕРШИНА ПИЩЕВОЙ ЦЕПИ!</h2>
+        <p data-i18n="victoryDesc">Вы эволюционировали в Легендарного Левиафана Океана! Ни одно создание бездны больше не способно бросить вам вызов!</p>
         
         <div class="end-stats-box">
           <div class="end-stat highlight">
-            <span class="lbl">Финальный Счёт:</span>
+            <span class="lbl" data-i18n="finalScore">Финальный Счёт:</span>
             <span id="victory-score" class="val">25 000</span>
           </div>
         </div>
 
         <div class="pause-actions">
-          <button id="freeplay-btn" class="btn-primary">ПРОДОЛЖИТЬ БЕЗЛИМИТНОЕ ПЛАВАНИЕ</button>
-          <button id="restart-victory-btn" class="btn-secondary">НАЧАТЬ ЗАНОВО</button>
+          <button id="freeplay-btn" class="btn-primary" data-i18n="freeplayBtn">ПРОДОЛЖИТЬ БЕЗЛИМИТНОЕ ПЛАВАНИЕ</button>
+          <button id="restart-victory-btn" class="btn-secondary" data-i18n="restartBtn">НАЧАТЬ ЗАНОВО</button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="js/audio.js?v=2.1"></script>
-  <script src="js/assets.js?v=2.1"></script>
-  <script src="js/creature.js?v=2.1"></script>
-  <script src="js/mollusk.js?v=2.1"></script>
-  <script src="js/environment.js?v=2.1"></script>
-  <script src="js/game.js?v=2.1"></script>
+  <script src="js/i18n.js?v=2.2"></script>
+  <script src="js/audio.js?v=2.2"></script>
+  <script src="js/assets.js?v=2.2"></script>
+  <script src="js/creature.js?v=2.2"></script>
+  <script src="js/mollusk.js?v=2.2"></script>
+  <script src="js/environment.js?v=2.2"></script>
+  <script src="js/game.js?v=2.2"></script>
 </body>
 </html>

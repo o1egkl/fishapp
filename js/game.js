@@ -219,6 +219,24 @@ class GameManager {
       this.startNewGame();
     });
 
+    // Кнопки переключения языка (в HUD и стартовом окне)
+    document.querySelectorAll('[data-lang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.getAttribute('data-lang');
+        if (typeof window !== 'undefined' && window.I18N) {
+          window.I18N.setLanguage(lang);
+          this.updateHUD();
+        }
+      });
+    });
+
+    if (typeof window !== 'undefined' && window.I18N) {
+      window.I18N.onLanguageChange(() => {
+        this.updateHUD();
+      });
+      window.I18N.applyToDOM();
+    }
+
     // Продолжить после эволюции
     document.getElementById('continue-evo-btn').addEventListener('click', () => {
       this.dom.evoModal.classList.add('hidden');
@@ -667,10 +685,12 @@ class GameManager {
           clam.isDead = true;
           p.triggerChomp();
           this.sound.playEatClam(clam.isOpen);
-          this.addBiomass(clam.mass * (clam.isOpen ? 2 : 1), clam.x, clam.y, '🦪 Жемчужница!');
+          const clamLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatPearlClam') : '🦪 Жемчужница!';
+          this.addBiomass(clam.mass * (clam.isOpen ? 2 : 1), clam.x, clam.y, clamLabel);
           if (clam.isOpen && p.lives < (p.maxLives || 3)) {
             p.lives = Math.min(p.maxLives || 3, p.lives + 1);
-            this.createFloatingText('💖 +1 ЖИЗНЬ!', clam.x, clam.y - 30);
+            const lifeLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatPlusLife') : '💖 +1 ЖИЗНЬ!';
+            this.createFloatingText(lifeLabel, clam.x, clam.y - 30);
             this.updateHUD();
           }
           this.spawnBiteParticles(clam.x, clam.y, clam.pearlColor);
@@ -686,7 +706,8 @@ class GameManager {
         crab.isDead = true;
         p.triggerChomp();
         this.sound.playEatCrab();
-        this.addBiomass(crab.mass, crab.x, crab.y, '🦀 Вкусный краб!');
+        const crabLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatCrab') : '🦀 Вкусный краб!';
+        this.addBiomass(crab.mass, crab.x, crab.y, crabLabel);
         this.spawnBiteParticles(crab.x, crab.y, '#e53935');
       }
     }
@@ -699,7 +720,8 @@ class GameManager {
         naut.isDead = true;
         p.triggerChomp();
         this.sound.playEatFish(naut.mass);
-        this.addBiomass(naut.mass, naut.x, naut.y, '🌀 Наутилус!');
+        const nautLabel = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('eatNautilus') : '🌀 Наутилус!';
+        this.addBiomass(naut.mass, naut.x, naut.y, nautLabel);
         this.spawnBiteParticles(naut.x, naut.y, '#ff7043');
       }
     }
@@ -717,8 +739,12 @@ class GameManager {
           p.triggerChomp();
           if (this.sound && this.sound.playEatFish) this.sound.playEatFish(npc.mass);
           const speciesInfo = (typeof REAL_SPECIES_PRESETS !== 'undefined' && REAL_SPECIES_PRESETS[npc.species]) || null;
-          const fishName = speciesInfo ? speciesInfo.name : 'Рыба';
-          this.addBiomass(npc.mass * 0.85, npc.x, npc.y, `🐟 ${fishName} +${Math.round(npc.mass)}г`);
+          const fishName = (typeof window !== 'undefined' && window.I18N && window.I18N.getSpeciesName(npc.species)) || 
+                           (speciesInfo ? speciesInfo.name : 'Рыба');
+          const fishEatLabel = (typeof window !== 'undefined' && window.I18N)
+            ? window.I18N.t('eatFish', { name: fishName, mass: Math.round(npc.mass) })
+            : `🐟 ${fishName} +${Math.round(npc.mass)}г`;
+          this.addBiomass(npc.mass * 0.85, npc.x, npc.y, fishEatLabel);
           const biteColor = (npc.colors && npc.colors.body) || (speciesInfo && speciesInfo.color) || '#00e5ff';
           this.spawnBiteParticles(npc.x, npc.y, biteColor);
           this.fishes.splice(i, 1);
@@ -767,11 +793,13 @@ class GameManager {
 
               if (this.sound && this.sound.playHurt) this.sound.playHurt();
               this.spawnBiteParticles(p.x, p.y, '#ff4757');
-              this.createFloatingText('💔 УКУС ХИЩНИКА! (-1 Жизнь)', p.x, p.y);
+              const biteMsg = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('predatorBite') : '💔 УКУС ХИЩНИКА! (-1 Жизнь)';
+              this.createFloatingText(biteMsg, p.x, p.y);
               continue;
             } else {
               // Жизни исчерпаны — гибель
-              this.triggerGameOver('Вас проглотил опасный хищник глубин!');
+              const swallowMsg = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('predatorSwallowed') : 'Вас проглотил опасный хищник глубин!';
+              this.triggerGameOver(swallowMsg);
               return;
             }
           }
@@ -827,7 +855,8 @@ class GameManager {
     this.score += Math.round(amount * 10);
     this.preyEaten++;
 
-    this.createFloatingText(label || `+${Math.round(amount)}г`, x, y);
+    const gUnit = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('unitG') : 'г';
+    this.createFloatingText(label || `+${Math.round(amount)}${gUnit}`, x, y);
 
     const curStage = EVOLUTION_STAGES[this.player.stage - 1];
     if (this.player.mass >= curStage.targetMass && this.player.stage < 4) {
@@ -852,8 +881,16 @@ class GameManager {
 
     if (this.sound && this.sound.playEvolution) this.sound.playEvolution();
 
-    if (this.dom.evoNewName) this.dom.evoNewName.textContent = stageData.name;
-    if (this.dom.evoDesc) this.dom.evoDesc.textContent = stageData.desc;
+    if (this.dom.evoNewName) {
+      this.dom.evoNewName.textContent = (typeof window !== 'undefined' && window.I18N)
+        ? window.I18N.getStageName(nextStageNum)
+        : stageData.name;
+    }
+    if (this.dom.evoDesc) {
+      this.dom.evoDesc.textContent = (typeof window !== 'undefined' && window.I18N)
+        ? window.I18N.getStageDesc(nextStageNum)
+        : stageData.desc;
+    }
     this.drawEvoPreview(stageData);
 
     if (this.dom.evoModal) this.dom.evoModal.classList.remove('hidden');
@@ -884,12 +921,14 @@ class GameManager {
     if (causeEl) causeEl.textContent = reason;
 
     const lenEl = document.getElementById('final-length');
+    const cmUnit = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('unitCm') : 'см';
     if (lenEl) {
-      lenEl.textContent = (this.dom.fishLength && this.dom.fishLength.textContent) || (this.player ? `${Math.round(this.player.radius * 0.9)} см` : '12 см');
+      lenEl.textContent = (this.dom.fishLength && this.dom.fishLength.textContent) || (this.player ? `${Math.round(this.player.radius * 0.9)} ${cmUnit}` : `12 ${cmUnit}`);
     }
 
     const massEl = document.getElementById('final-mass');
-    if (massEl) massEl.textContent = `${Math.round(this.player ? this.player.mass : 0)} г`;
+    const gUnit = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('unitG') : 'г';
+    if (massEl) massEl.textContent = `${Math.round(this.player ? this.player.mass : 0)} ${gUnit}`;
 
     const eatenEl = document.getElementById('final-eaten');
     if (eatenEl) eatenEl.textContent = this.preyEaten;
@@ -964,7 +1003,11 @@ class GameManager {
     const stageData = EVOLUTION_STAGES[this.player.stage - 1];
     if (stageData) {
       if (this.dom.stageNum) this.dom.stageNum.textContent = this.player.stage;
-      if (this.dom.stageName) this.dom.stageName.textContent = stageData.name;
+      if (this.dom.stageName) {
+        this.dom.stageName.textContent = (typeof window !== 'undefined' && window.I18N)
+          ? window.I18N.getStageName(this.player.stage)
+          : stageData.name;
+      }
       if (this.dom.stageIcon) this.dom.stageIcon.textContent = stageData.icon;
 
       if (this.dom.currentMass) this.dom.currentMass.textContent = Math.round(this.player.mass);
@@ -985,7 +1028,9 @@ class GameManager {
 
     const estLength = Math.round(this.player.radius * 0.9);
     if (this.dom.fishLength) {
-      this.dom.fishLength.textContent = estLength >= 100 ? `${(estLength / 100).toFixed(1)} м` : `${estLength} см`;
+      const mUnit = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('unitM') : 'м';
+      const cmUnit = (typeof window !== 'undefined' && window.I18N) ? window.I18N.t('unitCm') : 'см';
+      this.dom.fishLength.textContent = estLength >= 100 ? `${(estLength / 100).toFixed(1)} ${mUnit}` : `${estLength} ${cmUnit}`;
     }
 
     if (this.dom.hudScore) this.dom.hudScore.textContent = this.score.toLocaleString();

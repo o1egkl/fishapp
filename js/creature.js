@@ -482,14 +482,20 @@ class Fish {
       ctx.textAlign = 'center';
       ctx.shadowBlur = 6;
       ctx.shadowColor = '#000000';
-      ctx.fillText(`🛡️ ЩИТ (${shieldSec}с)`, this.x, this.y - shieldRadius - 8);
+      const shieldTxt = (typeof window !== 'undefined' && window.I18N)
+        ? window.I18N.t('shieldIndicator', { sec: shieldSec })
+        : `🛡️ ЩИТ (${shieldSec}с)`;
+      ctx.fillText(shieldTxt, this.x, this.y - shieldRadius - 8);
     } else {
       ctx.font = 'bold 11px sans-serif';
       ctx.fillStyle = theme === 'neon' ? '#00ffcc' : '#ffffff';
       ctx.textAlign = 'center';
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#000000';
-      ctx.fillText('ВЫ 🐟', this.x, this.y - r * 1.5 - 6);
+      const youTxt = (typeof window !== 'undefined' && window.I18N)
+        ? window.I18N.t('playerIndicator')
+        : 'ВЫ 🐟';
+      ctx.fillText(youTxt, this.x, this.y - r * 1.5 - 6);
     }
     ctx.restore();
   }
