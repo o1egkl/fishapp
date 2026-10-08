@@ -1,6 +1,8 @@
 services:
   aquagenesis:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     container_name: aquagenesis-game
     ports:
       - "8080:80"

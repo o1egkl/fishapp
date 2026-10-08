@@ -1,0 +1,13 @@
+.git
+.edge_cdp_profile/
+.edge_cdp_profile2/
+.edge_test_profile/
+*.ps1
+test_*.js
+run_diag.js
+measure*.ps1
+capture*.js
+Dockerfile
+docker-compose.yml
+*.png
+!assets/*.png

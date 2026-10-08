@@ -20,3 +20,9 @@ run_diag.js
 capture.js
 measure.ps1
 measure_all.ps1
+
+# Vercel
+.vercel/
+
+
+.vercel
