@@ -150,7 +150,13 @@ class Fish {
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.angle = options.angle || Math.random() * Math.PI * 2;
+    this.cruiseDir = (options.angle !== undefined && Math.cos(options.angle) < 0) ? -1 : (Math.random() < 0.5 ? 1 : -1);
+    this.wanderPitch = (Math.random() - 0.5) * 0.25;
+    if (options.angle !== undefined) {
+      this.angle = options.angle;
+    } else {
+      this.angle = this.cruiseDir > 0 ? this.wanderPitch : (Math.PI - this.wanderPitch);
+    }
     this.targetAngle = this.angle;
 
     this.isPlayer = options.isPlayer || false;
@@ -359,7 +365,11 @@ class Fish {
 
     if (wantsToFlee) {
       this.aiState = 'FLEE';
-      this.targetAngle = Math.atan2(fleeY, fleeX);
+      // Убегаем в горизонтальном направлении с умеренным вертикальным уклонением
+      const fleeDirX = Math.sign(fleeX) || (this.cruiseDir || 1);
+      this.cruiseDir = fleeDirX;
+      const fleePitch = Math.max(-0.40, Math.min(0.40, fleeY / (Math.abs(fleeX) + 120)));
+      this.targetAngle = fleeDirX > 0 ? fleePitch : (fleePitch >= 0 ? Math.PI - fleePitch : -Math.PI - fleePitch);
       const fleeSpeed = this.maxSpeed * 0.85;
       this.vx += Math.cos(this.targetAngle) * (fleeSpeed * 0.04);
       this.vy += Math.sin(this.targetAngle) * (fleeSpeed * 0.04);
@@ -371,19 +381,41 @@ class Fish {
     const isPredatoryCarnivore = ['barracuda', 'shark', 'lionfish'].includes(this.species) || this.stage >= 3;
     if (isPredatoryCarnivore && distToPlayer < sightRange * 0.85 && this.radius > player.radius * 1.25 && (!player.shieldTimer || player.shieldTimer <= 0)) {
       this.aiState = 'CHASE';
-      this.targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+      const chaseX = player.x - this.x;
+      const chaseY = player.y - this.y;
+      const chaseDirX = Math.sign(chaseX) || (this.cruiseDir || 1);
+      this.cruiseDir = chaseDirX;
+      const chasePitch = Math.max(-0.42, Math.min(0.42, chaseY / (Math.abs(chaseX) + 100)));
+      this.targetAngle = chaseDirX > 0 ? chasePitch : (chasePitch >= 0 ? Math.PI - chasePitch : -Math.PI - chasePitch);
       const huntSpeed = this.maxSpeed * 0.75;
       this.vx += Math.cos(this.targetAngle) * (huntSpeed * 0.035);
       this.vy += Math.sin(this.targetAngle) * (huntSpeed * 0.035);
       return;
     }
 
+    // Спокойное ихтиологическое крейсирование: рыбы плавают преимущественно горизонтально (влево или вправо),
+    // плавно покачиваясь по глубине (вверх/вниз не более ±18 градусов)
     if (this.aiChangeTimer <= 0) {
-      this.aiChangeTimer = 90 + Math.random() * 120;
-      this.wanderAngle += (Math.random() - 0.5) * 1.2;
+      this.aiChangeTimer = 100 + Math.random() * 150;
+      // В 25% случаев рыба плавно разворачивается в противоположную сторону
+      if (Math.random() < 0.25) {
+        this.cruiseDir = -(this.cruiseDir || 1);
+      }
+      this.wanderPitch = (Math.random() - 0.5) * 0.30;
     }
 
-    this.targetAngle = this.wanderAngle;
+    // Отталкивание от верхней кромки (поверхности) и морского дна
+    if (this.y < 250) {
+      this.wanderPitch = Math.abs(this.wanderPitch) + 0.15; // плавно уходим глубже
+    } else if (this.y > 2100) {
+      this.wanderPitch = -Math.abs(this.wanderPitch) - 0.15; // плавно всплываем
+    }
+
+    const currentPitch = Math.max(-0.35, Math.min(0.35, this.wanderPitch || 0));
+    this.targetAngle = this.cruiseDir > 0 
+      ? currentPitch 
+      : (currentPitch >= 0 ? Math.PI - currentPitch : -Math.PI - currentPitch);
+
     const wanderSpeed = this.maxSpeed * 0.45;
     this.vx += Math.cos(this.targetAngle) * (wanderSpeed * 0.025);
     this.vy += Math.sin(this.targetAngle) * (wanderSpeed * 0.025);

@@ -109,19 +109,19 @@ class AssetManager {
     const turnScaleX = facingSign * Math.sin(absF * Math.PI * 0.5);
     const turnScaleY = 1.0 + (1.0 - absF) * 0.08;
 
-    // Угол поворота холста:
-    // Нос исходного спрайта направлен вправо (+X), спинной плавник сверху (-Y).
-    // Если рыба развернута влево (isFacingLeft === true), спрайт масштабируется с turnScaleX < 0,
-    // поэтому для строгого совмещения носа с курсом движения поворачиваем на (normAngle ± PI).
-    // Это гарантирует, что нос ВСЕГДА направлен строго по ходу движения, а спина всегда сверху!
-    const rotAngle = isFacingLeft
+    // Угол наклона тела (тангаж):
+    // В реальной гидродинамике рыбы плывут преимущественно горизонтально,
+    // наклоняя тело вверх или вниз не более чем на 25-28 градусов при изменении глубины.
+    const rawPitch = isFacingLeft
       ? (normAngle > 0 ? normAngle - Math.PI : normAngle + Math.PI)
       : normAngle;
+    const maxVisualPitch = 0.48; // предел естественного наклона рыбы в воде (~27.5 градусов)
+    const rotAngle = Math.max(-maxVisualPitch, Math.min(maxVisualPitch, rawPitch));
 
     ctx.save();
     ctx.translate(x, y);
 
-    // 1. Поворот строго по курсу движения рыбы (нос всегда смотрит вперед!)
+    // 1. Поворот с естественным наклоном корпуса (рыба никогда не встает вертикально торчком!)
     ctx.rotate(rotAngle);
 
     // 2. Плавный органичный 3D-разворот в воде
