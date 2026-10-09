@@ -86,7 +86,7 @@ class AssetManager {
   /**
    * Живая органическая отрисовка реальной рыбы с волнообразным движением позвоночника и естественными пропорциями
    */
-  drawFish(ctx, species, x, y, radius, angle, swimPhase = 0, isDashing = false, theme = 'day', smoothFacing = null, pitch = null) {
+  drawFish(ctx, species, x, y, radius, angle, swimPhase = 0, isDashing = false, theme = 'day', smoothFacing = null, pitch = null, isPlayer = false) {
     const sprite = this.getSprite(species);
     if (!sprite) return false;
 
@@ -100,8 +100,10 @@ class AssetManager {
     while (normAngle > Math.PI) normAngle -= Math.PI * 2;
     while (normAngle < -Math.PI) normAngle += Math.PI * 2;
 
-    // Определяем базовую ориентацию строго по курсу (рыба плывет влево или вправо)
-    const isFacingLeft = Math.cos(normAngle) < 0;
+    // Определяем базовую ориентацию строго по курсу с учетом гистерезиса (рыба плывет влево или вправо)
+    const isFacingLeft = (smoothFacing !== null && smoothFacing !== undefined)
+      ? (smoothFacing < 0)
+      : (Math.cos(normAngle) < 0);
     const facingSign = isFacingLeft ? -1 : 1;
 
     // Плавное синусоидальное сжатие силуэта при развороте в 3D
@@ -112,18 +114,18 @@ class AssetManager {
     const turnScaleY = 1.0 + (1.0 - absF) * 0.08;
 
     // Угол наклона тела (тангаж):
-    // В реальной гидродинамике рыбы плывут преимущественно горизонтально,
-    // наклоняя тело вверх или вниз не более чем на 25-28 градусов при изменении глубины.
+    // Для игрока обеспечивается свободное, точное следование за курсором во всех направлениях (до ±85°),
+    // а для фоновых NPC-рыб сохраняется спокойное ихтиологическое крейсирование (±27.5°).
     const rawPitch = isFacingLeft
       ? (normAngle > 0 ? normAngle - Math.PI : normAngle + Math.PI)
       : normAngle;
-    const maxVisualPitch = 0.48; // предел естественного наклона рыбы в воде (~27.5 градусов)
+    const maxVisualPitch = isPlayer ? 1.48 : 0.48;
     const rotAngle = Math.max(-maxVisualPitch, Math.min(maxVisualPitch, rawPitch));
 
     ctx.save();
     ctx.translate(x, y);
 
-    // 1. Поворот с естественным наклоном корпуса (рыба никогда не встает вертикально торчком!)
+    // 1. Поворот с естественным наклоном корпуса
     ctx.rotate(rotAngle);
 
     // 2. Плавный органичный 3D-разворот в воде
@@ -136,14 +138,11 @@ class AssetManager {
     }
 
     // =========================================================================
-    // НЕПРЕРЫВНАЯ БИОМЕХАНИЧЕСКАЯ АНИМАЦИЯ ПОЗВОНОЧНИКА (Continuous Skeletal Spine Ribbon)
-    // Устраняет фрагментацию: тело плавно изгибается как единое монолитное существо,
-    // голова и передняя часть остаются жесткими, а хвостовой стебель и плавник
-    // совершают непрерывные органичные волнообразные толчки.
+    // НЕПРЕРЫВНАЯ БИОМЕХАНИЧЕСКАЯ АНИМАЦИЯ ПОЗВОНОЧНИКА (Continuous Skeletal Mesh Ribbon)
     // =========================================================================
 
     // Тонкая нарезка на узкие микро-сегменты (36 полос для крупных хищников, 24 для остальных)
-    const isLargePredator = species === 'shark' || species === 'barracuda';
+    const isLargePredator = species === 'megalodon' || species === 'shark' || species === 'barracuda';
     const numStrips = isLargePredator ? 36 : 24;
     const stripSrcW = b.w / numStrips;
     const stripDestW = fishLength / numStrips;
@@ -157,17 +156,22 @@ class AssetManager {
     let waveFreq = isDashing ? 1.3 : 0.9;
     let waveLengthFactor = 1.0;
 
-    if (species === 'shark') {
+    if (species === 'megalodon') {
+      // Древний Мегалодон: колоссальный 20-метровый сверххищник.
+      // Передние 55% тела (гигантский череп, массивные челюсти, грудные плавники) монолитны.
+      // Мощная хвостовая часть совершает размеренные сокрушительные толчки.
+      rigidFraction = 0.55;
+      waveFreq = isDashing ? 0.95 : 0.50;
+      waveAmp = Math.min(8.0, radius * 0.08) * (isDashing ? 1.3 : 0.85);
+      waveLengthFactor = 0.78;
+    } else if (species === 'shark') {
       // Большая Белая Акула: тяжелый гидродинамический хищник.
-      // Передние 52% тела (череп, массивные челюсти, жаберные щели, мощный спинной плавник) монолитны.
-      // Изгибается только хвостовой стебель с серповидным хвостом.
       rigidFraction = 0.52;
-      waveFreq = isDashing ? 1.15 : 0.65; // Размеренные грациозные взмахи
+      waveFreq = isDashing ? 1.15 : 0.65;
       waveAmp = Math.min(6.5, radius * 0.09) * (isDashing ? 1.3 : 0.9);
       waveLengthFactor = 0.82;
     } else if (species === 'barracuda') {
       // Барракуда: стреловидный бросковый хищник.
-      // Первые 50% тела прямые как стрела, упругий взмах на хвосте.
       rigidFraction = 0.50;
       waveFreq = isDashing ? 1.35 : 0.85;
       waveAmp = Math.min(6.0, radius * 0.11) * (isDashing ? 1.4 : 0.95);

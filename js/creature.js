@@ -290,9 +290,14 @@ class Fish {
       this.updateAI(player, otherFish, foods);
     }
 
-    // Плавный рост радиуса игрока в зависимости от биомассы
+    // Плавный рост радиуса игрока в зависимости от биомассы и эволюционной стадии
     if (this.isPlayer) {
-      const targetRadius = Math.max(22, Math.pow(this.mass, 0.215) * 13.5);
+      const stageIdx = Math.max(0, Math.min(EVOLUTION_STAGES.length - 1, (this.stage || 1) - 1));
+      const curStage = EVOLUTION_STAGES[stageIdx];
+      const nextStage = EVOLUTION_STAGES[stageIdx + 1];
+      const nextRadius = nextStage ? nextStage.baseRadius : curStage.baseRadius * 1.25;
+      const progress = Math.max(0, Math.min(1, (this.mass - curStage.minMass) / Math.max(1, curStage.targetMass - curStage.minMass)));
+      const targetRadius = curStage.baseRadius + (nextRadius - curStage.baseRadius) * progress;
       this.radius += (targetRadius - this.radius) * 0.05;
     }
 
@@ -307,7 +312,10 @@ class Fish {
     this.vy *= friction;
 
     // Ограничение по границам мира с мягким отталкиванием
-    const pad = this.radius * 2;
+    // Для гигантского Мегалодона и игрока отступ калиброван так, чтобы не создавать невидимых барьеров вдали от краев
+    const pad = this.isPlayer
+      ? Math.min(75, Math.max(20, this.radius * 0.4))
+      : Math.min(120, Math.max(20, this.radius * 0.8));
     if (this.x < pad) { this.x = pad; this.vx = Math.abs(this.vx) * 0.4; }
     if (this.x > worldWidth - pad) { this.x = worldWidth - pad; this.vx = -Math.abs(this.vx) * 0.4; }
     if (this.y < pad) { this.y = pad; this.vy = Math.abs(this.vy) * 0.4; }
@@ -323,8 +331,12 @@ class Fish {
       : this.turnSpeed;
     this.angle += diff * turnRate;
 
-    // Отслеживание направления (влево / вправо)
-    this.facing = Math.cos(this.angle) < 0 ? -1 : 1;
+    // Отслеживание направления (влево / вправо) с гистерезисом для предотвращения флип-джиттера при вертикальном движении
+    if (Math.cos(this.angle) < -0.15) {
+      this.facing = -1;
+    } else if (Math.cos(this.angle) > 0.15) {
+      this.facing = 1;
+    }
 
     // Плавный поворот тела в 3D
     const turnLerp = this.isPlayer ? 0.38 : 0.18;
@@ -355,6 +367,12 @@ class Fish {
     this.segments[0].x = this.x;
     this.segments[0].y = this.y;
     this.segments[0].angle = this.angle;
+
+    // Гарантируем наличие всех сегментов при эволюционном росте
+    while (this.segments.length < this.numSegments) {
+      const last = this.segments[this.segments.length - 1];
+      this.segments.push({ x: last.x, y: last.y, angle: last.angle });
+    }
 
     const segmentDist = this.radius * 0.42;
     for (let i = 1; i < this.numSegments; i++) {
@@ -409,9 +427,10 @@ class Fish {
 
     // Движение вперед строго по направлению носа рыбы (this.angle)!
     // Когда рыба еще разворачивается, тяга плавно модулируется, исключая неестественное движение задом наперед.
-    const forwardAlignment = Math.max(0.18, Math.cos(diff));
+    const forwardAlignment = Math.max(0.22, Math.cos(diff));
+    const slowZone = Math.max(25, Math.min(60, this.radius * 0.3));
     const distFactor = (this.targetDist !== undefined)
-      ? Math.min(1.0, Math.max(0.08, this.targetDist / 35))
+      ? Math.min(1.0, Math.max(0.2, this.targetDist / slowZone))
       : 1.0;
 
     const accel = (curSpeed * 0.12) * forwardAlignment * distFactor;
@@ -598,7 +617,8 @@ class Fish {
         this.isDashing,
         theme,
         this.smoothFacing,
-        this.pitch
+        this.pitch,
+        this.isPlayer
       );
     }
 
@@ -617,6 +637,7 @@ class Fish {
         case 'barracuda':
           this.drawBarracuda(ctx, theme);
           break;
+        case 'megalodon':
         case 'shark':
           this.drawShark(ctx, theme);
           break;

@@ -1062,6 +1062,14 @@ class GameManager {
     this.player.maxSpeed = stageData.speed;
     this.player.dashSpeed = stageData.dashSpeed;
     this.player.turnSpeed = 0.24;
+    this.player.radius = Math.max(this.player.radius, stageData.baseRadius);
+    if (stageData.species === 'megalodon') {
+      this.player.numSegments = 11;
+    } else if (stageData.species === 'shark') {
+      this.player.numSegments = 10;
+    } else if (stageData.species === 'barracuda') {
+      this.player.numSegments = 9;
+    }
     this.player.colors = stageData.colors || { body: stageData.color || '#00e5ff' };
     this.player.evolutionGlow = 1;
     this.player.lives = this.player.maxLives || 3; // Полное исцеление при эволюции!

@@ -294,6 +294,41 @@ try {
   if (megaCount > 1) throw new Error(`Megalodon count ${megaCount} exceeds cap of 1!`);
   if (sharkCount > 2) throw new Error(`Shark count ${sharkCount} exceeds cap of 2!`);
 
+  // Test 10: Megalodon Player Steering and Mouse Following
+  console.log('Testing Megalodon player mouse following & steering...');
+  game.evolvePlayer(8);
+  const megaPlayer = game.player;
+  console.log('  Megalodon player status: stage =', megaPlayer.stage, 'species =', megaPlayer.species, 'radius =', megaPlayer.radius, 'segments =', megaPlayer.numSegments);
+  if (megaPlayer.species !== 'megalodon') throw new Error('Player species should be megalodon at stage 8!');
+  if (megaPlayer.radius < 185) throw new Error(`Megalodon radius should be at least 185, got ${megaPlayer.radius}`);
+  if (megaPlayer.numSegments !== 11) throw new Error(`Megalodon should have 11 segments, got ${megaPlayer.numSegments}`);
+
+  // 10a. Mouse straight UP (-Y)
+  game.input.mouseX = window.innerWidth / 2;
+  game.input.mouseY = window.innerHeight / 2 - 400;
+  for (let i = 0; i < 25; i++) game.update(16);
+  console.log('  Megalodon UP: angle =', megaPlayer.angle.toFixed(2), 'vy =', megaPlayer.vy.toFixed(2), 'facing =', megaPlayer.facing);
+  if (megaPlayer.vy >= 0) throw new Error('Megalodon should follow cursor UP with negative vy!');
+
+  // 10b. Mouse straight DOWN (+Y)
+  game.input.mouseX = window.innerWidth / 2;
+  game.input.mouseY = window.innerHeight / 2 + 400;
+  for (let i = 0; i < 25; i++) game.update(16);
+  console.log('  Megalodon DOWN: angle =', megaPlayer.angle.toFixed(2), 'vy =', megaPlayer.vy.toFixed(2), 'facing =', megaPlayer.facing);
+  if (megaPlayer.vy <= 0) throw new Error('Megalodon should follow cursor DOWN with positive vy!');
+
+  // 10c. Boundary tolerance (near surface y=100)
+  megaPlayer.y = 100;
+  megaPlayer.vy = -1;
+  game.input.mouseY = window.innerHeight / 2 - 400;
+  game.update(16);
+  console.log('  Megalodon near surface y =', megaPlayer.y.toFixed(2), '(pad is under 80px, not 370px)');
+  if (megaPlayer.y > 100) throw new Error('Megalodon should not be bounced back at y=100 from an oversized 370px boundary pad!');
+
+  // 10d. Render Megalodon
+  game.render();
+  console.log('  Megalodon rendered smoothly with full player pitch and biomechanics!');
+
   console.log('All tests passed without throwing any errors!');
 
 } catch (err) {
