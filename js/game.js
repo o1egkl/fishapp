@@ -396,9 +396,9 @@ class GameManager {
 
     this.maxBiomassAchieved = this.player.mass;
 
-    // Крупный приближенный план (1.65x), чтобы игрок отчетливо видел свою рыбку и мир
-    this.camera.scale = 1.65;
-    this.camera.targetScale = 1.65;
+    // Крупный приближенный план (1.45x) для стадии 1, чтобы неонка была детально видна и гармонично росла на экране на каждом уровне
+    this.camera.scale = 1.45;
+    this.camera.targetScale = 1.45;
     this.camera.x = this.player.x - (window.innerWidth / 2) / this.camera.scale;
     this.camera.y = this.player.y - (window.innerHeight / 2) / this.camera.scale;
 
@@ -484,12 +484,14 @@ class GameManager {
     let chosenSpecies = forceSpecies;
     if (!chosenSpecies) {
       const roll = Math.random();
-      if (roll < 0.38) chosenSpecies = 'neontetra';
-      else if (roll < 0.58) chosenSpecies = 'clownfish';
-      else if (roll < 0.74) chosenSpecies = Math.random() < 0.5 ? 'bluetang' : 'yellowtang';
-      else if (roll < 0.86) chosenSpecies = 'lionfish';
-      else if (roll < 0.95) chosenSpecies = 'barracuda';
-      else chosenSpecies = 'shark';
+      if (roll < 0.25) chosenSpecies = 'neontetra';
+      else if (roll < 0.45) chosenSpecies = 'clownfish';
+      else if (roll < 0.58) chosenSpecies = 'yellowtang';
+      else if (roll < 0.70) chosenSpecies = 'bluetang';
+      else if (roll < 0.80) chosenSpecies = 'lionfish';
+      else if (roll < 0.88) chosenSpecies = 'barracuda';
+      else if (roll < 0.95) chosenSpecies = 'shark';
+      else chosenSpecies = 'megalodon';
     }
 
     const preset = REAL_SPECIES_PRESETS[chosenSpecies] || REAL_SPECIES_PRESETS.neontetra;
@@ -502,7 +504,8 @@ class GameManager {
     // Если хищник или крупная рыба — спавним вдали от игрока
     if (preset.stage >= 2) {
       let tries = 0;
-      while (Math.hypot(x - pX, y - pY) < 1100 && tries < 15) {
+      const safeDist = preset.stage >= 6 ? 1400 : 1000;
+      while (Math.hypot(x - pX, y - pY) < safeDist && tries < 15) {
         x = Math.random() * this.worldWidth;
         y = 150 + Math.random() * (this.worldHeight - 300);
         tries++;
@@ -622,9 +625,11 @@ class GameManager {
     this.camera.x += (targetCamX - this.camera.x) * 0.08;
     this.camera.y += (targetCamY - this.camera.y) * 0.08;
 
-    // Масштаб камеры: комфортный обзор для увеличенных реалистичных рыб
-    const stageScales = [1.35, 1.15, 0.90, 0.65];
-    this.camera.targetScale = stageScales[this.player.stage - 1] || 1.0;
+    // Масштаб камеры: калиброван так, чтобы при переходе на каждый уровень физический размер рыбы на экране (R_screen = R_world * camera.scale) гарантированно возрастал:
+    // St1: 24 * 1.45 = 34.8px -> St2: 36 * 1.35 = 48.6px -> St3: 48 * 1.25 = 60px -> St4: 62 * 1.15 = 71.3px ->
+    // St5: 80 * 1.05 = 84px -> St6: 104 * 0.95 = 98.8px -> St7: 136 * 0.85 = 115.6px -> St8: 185 * 0.75 = 138.8px
+    const stageScales = [1.45, 1.35, 1.25, 1.15, 1.05, 0.95, 0.85, 0.75];
+    this.camera.targetScale = stageScales[this.player.stage - 1] || 0.75;
     this.camera.scale += (this.camera.targetScale - this.camera.scale) * 0.03;
 
     // Ограничение камеры миром
@@ -785,7 +790,7 @@ class GameManager {
       } 
       // 2. Угроза от опасных хищников (акула, барракуда, крылатка или рыбы существенно больше игрока)
       else {
-        const isCarnivore = ['barracuda', 'shark', 'lionfish'].includes(npc.species) || npc.stage >= 3;
+        const isCarnivore = ['barracuda', 'shark', 'lionfish', 'megalodon'].includes(npc.species) || npc.stage >= 5;
         const isSignificantlyBigger = npc.radius > p.radius * 1.25;
 
         if (isCarnivore && isSignificantlyBigger) {
@@ -904,9 +909,9 @@ class GameManager {
     this.createFloatingText(label || `+${Math.round(amount)}${gUnit}`, x, y);
 
     const curStage = EVOLUTION_STAGES[this.player.stage - 1];
-    if (this.player.mass >= curStage.targetMass && this.player.stage < 4) {
+    if (this.player.mass >= curStage.targetMass && this.player.stage < 8) {
       this.evolvePlayer(this.player.stage + 1);
-    } else if (this.player.mass >= 5000 && this.player.stage === 4 && !this.freeplayMode) {
+    } else if (this.player.mass >= 30000 && this.player.stage === 8 && !this.freeplayMode) {
       this.triggerVictory();
     }
   }

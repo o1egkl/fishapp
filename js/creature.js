@@ -10,7 +10,7 @@
  * 7. Большая Белая Акула (Carcharodon carcharias)
  */
 
-// Стадии эволюции игрока на основе реальных рыб
+// Стадии эволюции игрока на основе реальных рыб (8 Уровней)
 const EVOLUTION_STAGES = [
   {
     stage: 1,
@@ -19,11 +19,11 @@ const EVOLUTION_STAGES = [
     latin: 'Paracheirodon innesi',
     icon: '🐟',
     minMass: 10,
-    targetMass: 100,
-    baseRadius: 26,
+    targetMass: 80,
+    baseRadius: 24,
     speed: 0.85,
     dashSpeed: 1.75,
-    lengthCm: '4 - 12 см',
+    lengthCm: '4 - 10 см',
     desc: 'Крошечная юркая тетра со светящейся неоновой полосой и алым хвостом. Питайтесь планктоном!'
   },
   {
@@ -32,41 +32,97 @@ const EVOLUTION_STAGES = [
     name: 'Рыба-Клоун (Оцеллярис)',
     latin: 'Amphiprion ocellatus',
     icon: '🐠',
-    minMass: 100,
-    targetMass: 450,
-    baseRadius: 40,
-    speed: 0.98,
-    dashSpeed: 2.0,
-    lengthCm: '15 - 35 см',
+    minMass: 80,
+    targetMass: 240,
+    baseRadius: 36,
+    speed: 0.95,
+    dashSpeed: 1.95,
+    lengthCm: '12 - 22 см',
     desc: 'Яркая рифовая рыба с 3 белоснежными полосами и черной каймой плавников. Охотьтесь на моллюсков!'
   },
   {
     stage: 3,
+    species: 'yellowtang',
+    name: 'Желтая Зебрасома',
+    latin: 'Zebrasoma flavescens',
+    icon: '💛',
+    minMass: 240,
+    targetMass: 600,
+    baseRadius: 48,
+    speed: 1.05,
+    dashSpeed: 2.1,
+    lengthCm: '20 - 30 см',
+    desc: 'Маневренная лимонная рыба коралловых атоллов. Легко собирает моллюсков и планктон!'
+  },
+  {
+    stage: 4,
+    species: 'bluetang',
+    name: 'Голубой Хирург (Дори)',
+    latin: 'Paracanthurus hepatus',
+    icon: '🐟',
+    minMass: 600,
+    targetMass: 1400,
+    baseRadius: 62,
+    speed: 1.15,
+    dashSpeed: 2.25,
+    lengthCm: '28 - 38 см',
+    desc: 'Быстрая рифовая рыба с глубоким сапфировым окрасом и острым хвостовым шипом!'
+  },
+  {
+    stage: 5,
+    species: 'lionfish',
+    name: 'Крылатка-Зебра',
+    latin: 'Pterois volitans',
+    icon: '🐡',
+    minMass: 1400,
+    targetMass: 3000,
+    baseRadius: 80,
+    speed: 1.25,
+    dashSpeed: 2.4,
+    lengthCm: '40 - 60 см',
+    desc: 'Опасный хищник с ядовитыми веерными лучами плавников. Пожирает большинство рыб рифа!'
+  },
+  {
+    stage: 6,
     species: 'barracuda',
     name: 'Большая Барракуда',
     latin: 'Sphyraena barracuda',
     icon: '🦈',
-    minMass: 450,
-    targetMass: 1800,
-    baseRadius: 54,
-    speed: 1.15,
-    dashSpeed: 2.3,
-    lengthCm: '70 - 150 см',
-    desc: 'Стреловидный хищник с выступающей нижней челюстью, кинжальными зубами и тигриными полосами!'
+    minMass: 3000,
+    targetMass: 6500,
+    baseRadius: 104,
+    speed: 1.35,
+    dashSpeed: 2.55,
+    lengthCm: '1.2 - 1.8 м',
+    desc: 'Стреловидный хищник с выступающей челюстью и кинжальными зубами. Сверхбыстрая торпеда!'
   },
   {
-    stage: 4,
+    stage: 7,
     species: 'shark',
     name: 'Большая Белая Акула',
     latin: 'Carcharodon carcharias',
     icon: '🦈',
-    minMass: 1800,
-    targetMass: 5000,
-    baseRadius: 72,
-    speed: 1.35,
-    dashSpeed: 2.6,
-    lengthCm: '3 - 6 метров',
-    desc: 'Вершинный сверххищник мирового океана: 5 жаберных щелей, серповидный хвост и ряды смертоносных зубов!'
+    minMass: 6500,
+    targetMass: 14000,
+    baseRadius: 136,
+    speed: 1.45,
+    dashSpeed: 2.7,
+    lengthCm: '4 - 6 метров',
+    desc: 'Вершинный сверххищник современного океана с мощными челюстями и серповидным хвостом!'
+  },
+  {
+    stage: 8,
+    species: 'megalodon',
+    name: 'Древний Мегалодон',
+    latin: 'Otodus megalodon',
+    icon: '👑',
+    minMass: 14000,
+    targetMass: 30000,
+    baseRadius: 185,
+    speed: 1.55,
+    dashSpeed: 2.85,
+    lengthCm: '15 - 20 метров',
+    desc: 'Легендарный Владыка Мирового Океана! Абсолютный гигант, господствующий над бездной!'
   }
 ];
 
@@ -86,61 +142,71 @@ const REAL_SPECIES_PRESETS = {
     species: 'clownfish',
     name: 'Рыба-Клоун',
     stage: 2,
-    baseRadius: 38,
+    baseRadius: 36,
     speed: 0.92,
     dashSpeed: 1.9,
     numSegments: 8,
     color: '#ff6d00'
   },
-  bluetang: {
-    species: 'bluetang',
-    name: 'Голубой Хирург (Дори)',
-    stage: 2,
-    baseRadius: 40,
-    speed: 0.96,
-    dashSpeed: 1.95,
-    numSegments: 8,
-    color: '#2979ff'
-  },
   yellowtang: {
     species: 'yellowtang',
     name: 'Желтая Зебрасома',
-    stage: 2,
-    baseRadius: 38,
-    speed: 0.94,
-    dashSpeed: 1.9,
+    stage: 3,
+    baseRadius: 48,
+    speed: 0.98,
+    dashSpeed: 2.0,
     numSegments: 8,
     color: '#ffd600'
+  },
+  bluetang: {
+    species: 'bluetang',
+    name: 'Голубой Хирург (Дори)',
+    stage: 4,
+    baseRadius: 62,
+    speed: 1.05,
+    dashSpeed: 2.1,
+    numSegments: 8,
+    color: '#2979ff'
   },
   lionfish: {
     species: 'lionfish',
     name: 'Крылатка-Зебра',
-    stage: 3,
-    baseRadius: 46,
-    speed: 1.0,
-    dashSpeed: 2.05,
-    numSegments: 8,
+    stage: 5,
+    baseRadius: 80,
+    speed: 1.15,
+    dashSpeed: 2.25,
+    numSegments: 9,
     color: '#d84315'
   },
   barracuda: {
     species: 'barracuda',
     name: 'Большая Барракуда',
-    stage: 3,
-    baseRadius: 54,
-    speed: 1.15,
-    dashSpeed: 2.3,
+    stage: 6,
+    baseRadius: 104,
+    speed: 1.25,
+    dashSpeed: 2.4,
     numSegments: 9,
     color: '#90a4ae'
   },
   shark: {
     species: 'shark',
     name: 'Большая Белая Акула',
-    stage: 4,
-    baseRadius: 72,
-    speed: 1.3,
+    stage: 7,
+    baseRadius: 136,
+    speed: 1.35,
     dashSpeed: 2.6,
     numSegments: 10,
     color: '#546e7a'
+  },
+  megalodon: {
+    species: 'megalodon',
+    name: 'Древний Мегалодон',
+    stage: 8,
+    baseRadius: 185,
+    speed: 1.45,
+    dashSpeed: 2.75,
+    numSegments: 11,
+    color: '#37474f'
   }
 };
 
@@ -166,15 +232,17 @@ class Fish {
     const defaultColor = (REAL_SPECIES_PRESETS[this.species] && REAL_SPECIES_PRESETS[this.species].color) || '#00e5ff';
     this.colors = options.colors || { body: defaultColor };
 
-    this.mass = options.mass || (this.stage === 1 ? 15 : this.stage === 2 ? 150 : this.stage === 3 ? 600 : 2500);
-    this.radius = options.radius || (this.stage === 1 ? 26 : this.stage === 2 ? 40 : this.stage === 3 ? 54 : 72);
+    const defaultMasses = [15, 120, 350, 800, 1800, 4000, 8000, 18000];
+    const defaultRadii = [24, 36, 48, 62, 80, 104, 136, 185];
+    this.mass = options.mass || (defaultMasses[this.stage - 1] || 15);
+    this.radius = options.radius || (defaultRadii[this.stage - 1] || 24);
     this.maxSpeed = options.maxSpeed || 0.85;
     this.dashSpeed = options.dashSpeed || 1.75;
     this.turnSpeed = options.turnSpeed || (this.isPlayer ? 0.24 : 0.065);
     this.targetDist = options.targetDist !== undefined ? options.targetDist : 100;
 
     // Процедурный скелет (сегменты позвоночника)
-    this.numSegments = options.numSegments || (this.species === 'shark' ? 10 : this.species === 'barracuda' ? 9 : 8);
+    this.numSegments = options.numSegments || (this.species === 'megalodon' ? 11 : this.species === 'shark' ? 10 : this.species === 'barracuda' ? 9 : 8);
     this.segments = [];
     for (let i = 0; i < this.numSegments; i++) {
       this.segments.push({
@@ -266,7 +334,9 @@ class Fish {
     // Крупные рыбы (акула, барракуда) совершают размеренные, мощные толчки хвостом,
     // а мелкие рыбы двигаются с более высокой частотой.
     let baseFreq = 0.038;
-    if (this.species === 'shark') {
+    if (this.species === 'megalodon') {
+      baseFreq = 0.016;
+    } else if (this.species === 'shark') {
       baseFreq = 0.020;
     } else if (this.species === 'barracuda') {
       baseFreq = 0.026;
@@ -376,9 +446,9 @@ class Fish {
       return;
     }
 
-    // Охота хищников: ТОЛЬКО настоящие хищные виды (барракуда, акула, крылатка) или гиганты 3-4 стадий охотятся на игрока!
+    // Охота хищников: ТОЛЬКО настоящие хищные виды (барракуда, акула, мегалодон, крылатка) или хищники 5-8 стадий охотятся на игрока!
     // Мирные рифовые рыбки (тетра, клоун, хирург, зебрасома) не нападают на игрока!
-    const isPredatoryCarnivore = ['barracuda', 'shark', 'lionfish'].includes(this.species) || this.stage >= 3;
+    const isPredatoryCarnivore = ['barracuda', 'shark', 'lionfish', 'megalodon'].includes(this.species) || this.stage >= 5;
     if (isPredatoryCarnivore && distToPlayer < sightRange * 0.85 && this.radius > player.radius * 1.25 && (!player.shieldTimer || player.shieldTimer <= 0)) {
       this.aiState = 'CHASE';
       const chaseX = player.x - this.x;

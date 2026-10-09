@@ -63,7 +63,7 @@ const TRANSLATIONS = {
     ruleSurviveTitle: 'Выживайте',
     ruleSurviveDesc: 'Остерегайтесь рыб больше вас! Следите за красными сигналами эхолота и прячьтесь в водорослях.',
     ruleEvolveTitle: 'Эволюционируйте',
-    ruleEvolveDesc: 'Преодолейте 4 эволюционные ступени: от беззащитного малька до мифического Левиафана Океана!',
+    ruleEvolveDesc: 'Преодолейте 8 эволюционных ступеней: от беззащитного малька до древнего исполина Мегалодона!',
     controlsPcTitle: '💻 На Компьютере:',
     controlsPcDesc: 'Мышь — плыть за курсором<br>Пробел / Левый клик — турбо-рывок<br>WASD / Стрелки — ручное плавание',
     controlsMobileTitle: '📱 На Телефоне / Планшете:',
@@ -96,23 +96,31 @@ const TRANSLATIONS = {
     finalScore: 'Итоговый Счёт:',
     respawnBtn: 'ВОЗРОДИТЬСЯ В ОКЕАНЕ',
 
-    // Модальное окно победы (Левиафан)
+    // Модальное окно победы (Мегалодон)
     victoryTitle: 'ВЕРШИНА ПИЩЕВОЙ ЦЕПИ!',
-    victoryDesc: 'Вы эволюционировали в Легендарного Левиафана Океана! Ни одно создание бездны больше не способно бросить вам вызов!',
+    victoryDesc: 'Вы эволюционировали в Легендарного Мегалодона Океана! Ни одно создание бездны больше не способно бросить вам вызов!',
     freeplayBtn: 'ПРОДОЛЖИТЬ БЕЗЛИМИТНОЕ ПЛАВАНИЕ',
 
     // Названия стадий эволюции
     stageNames: {
       1: 'Крошечный Малёк',
       2: 'Рифовый Охотник',
-      3: 'Грозный Хищник',
-      4: 'Легендарный Левиафан'
+      3: 'Солнечная Зебрасома',
+      4: 'Королевский Хирург',
+      5: 'Огненная Крылатка',
+      6: 'Стремительная Барракуда',
+      7: 'Белая Акула',
+      8: 'Легендарный Мегалодон'
     },
     stageDescs: {
       1: 'Крошечная юркая тетра со светящейся неоновой полосой и алым хвостом. Питайтесь планктоном!',
-      2: 'Ваши челюсти окрепли, а спинной плавник позволяет совершать стремительные атаки!',
-      3: 'Неуловимая скорость и кинжальные зубы открывают охоту на крупных рыб!',
-      4: 'Вы достигли абсолютного величия — повелитель глубин и владыка всех вод!'
+      2: 'Полосатый оцеллярис. Ваши челюсти окрепли — охотьтесь на криль и открытых моллюсков!',
+      3: 'Ярко-лимонный обитатель лагун. Превосходная маневренность среди кораллов и водорослей.',
+      4: 'Элегантный сапфировый пловец с ярким желтым хвостом. Способен совершать стремительные рывки!',
+      5: 'Хищник с ядовитыми веерными лучами плавников. Открывает охоту на мелких рифовых рыб!',
+      6: 'Стреловидный охотник открытых вод с кинжальными зубами и молниеносным рывком!',
+      7: 'Грозный сверххищник океана с мощными серповидными плавниками и рядами острых зубов!',
+      8: 'Древний колосс глубин и абсолютный владыка океанов! Вершина пищевой цепи всех эпох!'
     },
 
     // Названия видов рыб
@@ -129,17 +137,17 @@ const TRANSLATIONS = {
         lengthCm: '15 - 35 см',
         desc: 'Яркая рифовая рыба с 3 белоснежными полосами и черной каймой плавников. Охотьтесь на моллюсков!'
       },
-      bluetang: {
-        name: 'Голубой Хирург (Дори)',
-        fullName: 'Голубой Хирург (Дори)',
-        lengthCm: '20 - 30 см',
-        desc: 'Быстрая рифовая рыба с глубоким ультрамариновым окрасом и желтым хвостом.'
-      },
       yellowtang: {
         name: 'Желтая Зебрасома',
         fullName: 'Желтая Зебрасома',
         lengthCm: '15 - 20 см',
         desc: 'Ярко-лимонный обитатель коралловых атоллов.'
+      },
+      bluetang: {
+        name: 'Голубой Хирург (Дори)',
+        fullName: 'Голубой Хирург (Дори)',
+        lengthCm: '20 - 30 см',
+        desc: 'Быстрая рифовая рыба с глубоким ультрамариновым окрасом и желтым хвостом.'
       },
       lionfish: {
         name: 'Крылатка-Зебра',
@@ -158,6 +166,12 @@ const TRANSLATIONS = {
         fullName: 'Большая Белая Акула',
         lengthCm: '3 - 6 метров',
         desc: 'Вершинный сверххищник мирового океана: 5 жаберных щелей, серповидный хвост и ряды смертоносных зубов!'
+      },
+      megalodon: {
+        name: 'Мегалодон',
+        fullName: 'Древний Мегалодон (Отодус)',
+        lengthCm: '15 - 20 метров',
+        desc: 'Древний колосс глубин и абсолютный владыка океанов! Вершина пищевой цепи всех эпох.'
       }
     }
   },
@@ -218,7 +232,7 @@ const TRANSLATIONS = {
     ruleSurviveTitle: 'Survive',
     ruleSurviveDesc: 'Beware of larger fish! Keep an eye on red sonar blips and seek shelter in kelp forests.',
     ruleEvolveTitle: 'Evolve',
-    ruleEvolveDesc: 'Conquer 4 evolutionary milestones: from a defenseless fry to the mythical Ocean Leviathan!',
+    ruleEvolveDesc: 'Conquer 8 evolutionary milestones: from a defenseless fry to the ancient colossus Megalodon!',
     controlsPcTitle: '💻 On PC:',
     controlsPcDesc: 'Mouse — swim towards cursor<br>Space / Left Click — turbo dash<br>WASD / Arrow keys — swim manually',
     controlsMobileTitle: '📱 On Mobile / Tablet:',
@@ -253,21 +267,29 @@ const TRANSLATIONS = {
 
     // Victory Modal
     victoryTitle: 'APEX OF THE FOOD CHAIN!',
-    victoryDesc: 'You have evolved into the Legendary Ocean Leviathan! No denizen of the abyss can challenge you now!',
+    victoryDesc: 'You have evolved into the Legendary Ocean Megalodon! No denizen of the abyss can challenge you now!',
     freeplayBtn: 'CONTINUE FREE SWIM',
 
     // Evolution stage names
     stageNames: {
       1: 'Tiny Fry',
       2: 'Reef Hunter',
-      3: 'Fierce Predator',
-      4: 'Legendary Leviathan'
+      3: 'Solar Tang',
+      4: 'Royal Tang',
+      5: 'Venomous Lionfish',
+      6: 'Swift Barracuda',
+      7: 'Great White Shark',
+      8: 'Legendary Megalodon'
     },
     stageDescs: {
       1: 'A tiny, agile tetra with an iridescent neon stripe and crimson tail. Feed on plankton!',
-      2: 'Your jaws have grown stronger and your dorsal fin enables swift ambush strikes!',
-      3: 'Stealthy speed and dagger-like teeth unlock hunting of large prey fish!',
-      4: 'You have attained supreme majesty — ruler of the abyss and monarch of all seas!'
+      2: 'Striped anemone hunter. Your jaws are stronger — hunt krill and open clams!',
+      3: 'A radiant lemon-yellow lagoon dweller with superb agility among corals and seaweeds.',
+      4: 'An elegant sapphire swimmer with a vibrant yellow tail, capable of swift acceleration!',
+      5: 'A majestic predator with venomous fan-like spines. Begin hunting smaller reef fish!',
+      6: 'A torpedo-shaped open-water hunter with dagger teeth and lightning-fast strike speed!',
+      7: 'A fearsome ocean apex predator with powerful crescent fins and rows of razor-sharp teeth!',
+      8: 'Ancient colossus of the abyss and absolute lord of the seas! The apex predator of all eras!'
     },
 
     // Fish species names
@@ -284,17 +306,17 @@ const TRANSLATIONS = {
         lengthCm: '15 - 35 cm',
         desc: 'A vibrant reef fish with 3 snowy stripes and black fin margins. Hunt for mollusks!'
       },
-      bluetang: {
-        name: 'Blue Tang (Dory)',
-        fullName: 'Blue Tang (Dory)',
-        lengthCm: '20 - 30 cm',
-        desc: 'A swift reef fish with deep ultramarine coloring and a vibrant yellow tail.'
-      },
       yellowtang: {
         name: 'Yellow Tang',
         fullName: 'Yellow Tang',
         lengthCm: '15 - 20 cm',
         desc: 'A bright lemon-yellow dweller of coral atolls.'
+      },
+      bluetang: {
+        name: 'Blue Tang (Dory)',
+        fullName: 'Blue Tang (Dory)',
+        lengthCm: '20 - 30 cm',
+        desc: 'A swift reef fish with deep ultramarine coloring and a vibrant yellow tail.'
       },
       lionfish: {
         name: 'Lionfish',
@@ -313,6 +335,12 @@ const TRANSLATIONS = {
         fullName: 'Great White Shark',
         lengthCm: '3 - 6 meters',
         desc: 'The apex ocean super-predator: 5 gill slits, crescent tail, and rows of razor-sharp teeth!'
+      },
+      megalodon: {
+        name: 'Megalodon',
+        fullName: 'Ancient Megalodon (Otodus)',
+        lengthCm: '15 - 20 meters',
+        desc: 'Ancient colossus of the abyss and absolute lord of the seas! The apex predator of all eras.'
       }
     }
   },
@@ -373,7 +401,7 @@ const TRANSLATIONS = {
     ruleSurviveTitle: 'שרדו',
     ruleSurviveDesc: 'היזהרו מדגים גדולים מכם! עקבו אחר אותות הסונאר האדומים והסתתרו ביערות אצות.',
     ruleEvolveTitle: 'התפתחו',
-    ruleEvolveDesc: 'עברו 4 שלבי אבולוציה: מדגיג חסר ישע ועד ללווייתן אוקיינוס מיתולוגי!',
+    ruleEvolveDesc: 'עברו 8 שלבי אבולוציה: מדגיג חסר ישע ועד לענק הקדמון מגלודון!',
     controlsPcTitle: '💻 במחשב:',
     controlsPcDesc: 'עכבר — שחייה בעקבות הסמן<br>רווח / קליק שמאלי — זינוק טורבו<br>WASD / מקשי חיצים — שחייה ידנית',
     controlsMobileTitle: '📱 בנייד / טאבלט:',
@@ -408,21 +436,29 @@ const TRANSLATIONS = {
 
     // Victory Modal
     victoryTitle: 'ראש שרשרת המזון!',
-    victoryDesc: 'התפתחת ללווייתן האוקיינוס האגדי! שום יצור במצולות אינו יכול עוד לאיים עליך!',
+    victoryDesc: 'התפתחת למגלודון האגדי של האוקיינוס! שום יצור במצולות אינו יכול עוד לאיים עליך!',
     freeplayBtn: 'המשך שחייה חופשית',
 
     // Evolution stage names
     stageNames: {
       1: 'דגיג זעיר',
       2: 'צייד השונית',
-      3: 'טורף אימתני',
-      4: 'לווייתן אגדי'
+      3: 'זברסומה שמשית',
+      4: 'נתחן מלכותי',
+      5: 'זהרון הדור',
+      6: 'ברקודה זריזה',
+      7: 'עמלץ לבן',
+      8: 'מגלודון אגדי'
     },
     stageDescs: {
       1: 'טטרה זעירה וזריזה בעלת פס ניאון זוהר וזנב אדום. ניזונו מפלנקטון!',
-      2: 'הלסתות שלך התחזקו, וסנפיר הגב מאפשר התקפות מארב בזק!',
-      3: 'מהירות חמקמקה ושיני פגיון מאפשרות צייד של דגים גדולים!',
-      4: 'הגעת להוד מוחלט — שליט המצולות ואדון כל המים!'
+      2: 'שושנון מפוספס. הלסתות התחזקו — צודו קריל וצדפות פתוחות!',
+      3: 'דג שונית בצבע לימון זוהר בעל כושר תמרון מצוין בין אלמוגים.',
+      4: 'שחיין ספיר אלגנטי בעל זנב צהוב בוהק, מסוגל להאיץ במהירות!',
+      5: 'טורף הדור בעל קוצי סנפיר ארסיים דמויי מניפה. פתחו בצייד דגי שונית קטנים!',
+      6: 'צייד דמוי חץ במים פתוחים עם שיני פגיון ומהירות זינוק קטלנית!',
+      7: 'טורף-על אימתני של האוקיינוס עם סנפירים סהרוניים רבי עוצמה ושורות שיניים חדות!',
+      8: 'ענק קדמון ממעמקי המצולות ושליט בלתי מעורער של הימים! ראש שרשרת המזון של כל הזמנים!'
     },
 
     // Fish species names
@@ -439,17 +475,17 @@ const TRANSLATIONS = {
         lengthCm: '15 - 35 ס"מ',
         desc: 'דג שונית ססגוני בעל 3 פסים לבנים וקצוות סנפיר שחורים. צודו רכיכות!'
       },
-      bluetang: {
-        name: 'נתחן כחול (דורי)',
-        fullName: 'נתחן כחול (דורי)',
-        lengthCm: '20 - 30 ס"מ',
-        desc: 'דג שונית מהיר בעל צבע אולטרה-מרין עמוק וזנב צהוב בוהק.'
-      },
       yellowtang: {
         name: 'זברסומה צהובה',
         fullName: 'זברסומה צהובה',
         lengthCm: '15 - 20 ס"מ',
         desc: 'שוכנת אטולים אלמוגיים בצבע לימון בוהק.'
+      },
+      bluetang: {
+        name: 'נתחן כחול (דורי)',
+        fullName: 'נתחן כחול (דורי)',
+        lengthCm: '20 - 30 ס"מ',
+        desc: 'דג שונית מהיר בעל צבע אולטרה-מרין עמוק וזנב צהוב בוהק.'
       },
       lionfish: {
         name: 'זהרון הדור',
@@ -468,6 +504,12 @@ const TRANSLATIONS = {
         fullName: 'עמלץ לבן',
         lengthCm: '3 - 6 מטרים',
         desc: 'טורף העל של האוקיינוס: 5 חריצי זימים, זנב סהרוני ושורות שיניים קטלניות!'
+      },
+      megalodon: {
+        name: 'מגלודון',
+        fullName: 'מגלודון קדמון (אוטודוס)',
+        lengthCm: '15 - 20 מטרים',
+        desc: 'ענק קדמון ממעמקי המצולות ושליט בלתי מעורער של הימים! ראש שרשרת המזון של כל הזמנים.'
       }
     }
   }
