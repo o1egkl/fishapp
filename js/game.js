@@ -483,15 +483,23 @@ class GameManager {
   spawnRandomNPCFish(forceSpecies = null) {
     let chosenSpecies = forceSpecies;
     if (!chosenSpecies) {
+      // Подсчет существующих хищников для соблюдения естественных лимитов популяции:
+      // Мегалодон максимум 1, Белая Акула максимум 2, Барракуда максимум 3, Крылатка максимум 4
+      const counts = { megalodon: 0, shark: 0, barracuda: 0, lionfish: 0 };
+      for (let f of this.fishes) {
+        if (counts[f.species] !== undefined) counts[f.species]++;
+      }
+
       const roll = Math.random();
       if (roll < 0.25) chosenSpecies = 'neontetra';
       else if (roll < 0.45) chosenSpecies = 'clownfish';
       else if (roll < 0.58) chosenSpecies = 'yellowtang';
       else if (roll < 0.70) chosenSpecies = 'bluetang';
-      else if (roll < 0.80) chosenSpecies = 'lionfish';
-      else if (roll < 0.88) chosenSpecies = 'barracuda';
-      else if (roll < 0.95) chosenSpecies = 'shark';
-      else chosenSpecies = 'megalodon';
+      else if (roll < 0.80 && counts.lionfish < 4) chosenSpecies = 'lionfish';
+      else if (roll < 0.88 && counts.barracuda < 3) chosenSpecies = 'barracuda';
+      else if (roll < 0.95 && counts.shark < 2) chosenSpecies = 'shark';
+      else if (counts.megalodon < 1) chosenSpecies = 'megalodon';
+      else chosenSpecies = Math.random() < 0.5 ? 'clownfish' : 'yellowtang';
     }
 
     const preset = REAL_SPECIES_PRESETS[chosenSpecies] || REAL_SPECIES_PRESETS.neontetra;
@@ -501,15 +509,34 @@ class GameManager {
     let x = Math.random() * this.worldWidth;
     let y = 150 + Math.random() * (this.worldHeight - 300);
 
-    // Если хищник или крупная рыба — спавним вдали от игрока
-    if (preset.stage >= 2) {
-      let tries = 0;
-      const safeDist = preset.stage >= 6 ? 1400 : 1000;
-      while (Math.hypot(x - pX, y - pY) < safeDist && tries < 15) {
-        x = Math.random() * this.worldWidth;
-        y = 150 + Math.random() * (this.worldHeight - 300);
-        tries++;
+    // Безопасное расстояние: не спавним хищников рядом с игроком и не спавним крупных рыб рядом друг с другом
+    let tries = 0;
+    const safePlayerDist = preset.stage >= 6 ? 1400 : (preset.stage >= 3 ? 900 : 500);
+
+    while (tries < 20) {
+      const distToPlayer = Math.hypot(x - pX, y - pY);
+      let tooCloseToOther = false;
+
+      // Если рыба стадии 3 и выше — проверяем дистанцию до других крупных рыб
+      if (preset.stage >= 3) {
+        for (let other of this.fishes) {
+          if (other.stage >= 3) {
+            const minSeparate = (preset.baseRadius + other.radius) * 2.5 + 200;
+            if (Math.hypot(x - other.x, y - other.y) < minSeparate) {
+              tooCloseToOther = true;
+              break;
+            }
+          }
+        }
       }
+
+      if (distToPlayer >= safePlayerDist && !tooCloseToOther) {
+        break; // Отличная просторная точка спавна найдена!
+      }
+
+      x = Math.random() * this.worldWidth;
+      y = 150 + Math.random() * (this.worldHeight - 300);
+      tries++;
     }
 
     const stageData = EVOLUTION_STAGES[preset.stage - 1];
@@ -652,7 +679,10 @@ class GameManager {
       fish.update(this.worldWidth, this.worldHeight, this.player, this.fishes, this.planktons, this.gameSpeed);
     }
 
-    // 6. Проверка коллизий и поедания
+    // 6. Физическое разделение тел рыб (предотвращение нагромождения и взаимного прохождения сквозь тела)
+    this.resolveFishSeparation();
+
+    // 7. Проверка коллизий и поедания
     this.checkCollisions();
 
     // 7. Пополнение экосистемы при убыли
@@ -887,6 +917,9 @@ class GameManager {
       }
     }
 
+    // Е. Охота и поедание среди других рыб экосистемы (NPC vs NPC)
+    this.resolveNPCPredation();
+
     // Предупреждение об опасности
     if (nearestThreatDist < p.radius * 6.5) {
       this.dom.dangerAlert.classList.remove('hidden');
@@ -897,6 +930,110 @@ class GameManager {
     } else {
       this.dom.dangerAlert.classList.add('hidden');
       this.dangerCooldown = 0;
+    }
+  }
+
+  resolveFishSeparation() {
+    const count = this.fishes.length;
+
+    // 1. Физическое разделение между всеми парами NPC-рыб
+    for (let i = 0; i < count; i++) {
+      const a = this.fishes[i];
+      if (!a) continue;
+
+      for (let j = i + 1; j < count; j++) {
+        const b = this.fishes[j];
+        if (!b) continue;
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        const minDist = (a.radius + b.radius) * 0.95;
+
+        if (dist < minDist) {
+          // Если одна рыба может съесть другую прямо сейчас и голодна — не отталкиваем назад, чтобы пасть достала добычу
+          const aCanEatB = (a.radius >= b.radius * 1.2) && (!a.feedCooldown || a.feedCooldown <= 0) &&
+                           (['megalodon', 'shark', 'barracuda', 'lionfish'].includes(a.species) || a.stage >= 5);
+          const bCanEatA = (b.radius >= a.radius * 1.2) && (!b.feedCooldown || b.feedCooldown <= 0) &&
+                           (['megalodon', 'shark', 'barracuda', 'lionfish'].includes(b.species) || b.stage >= 5);
+
+          if (aCanEatB || bCanEatA) {
+            continue;
+          }
+
+          const overlap = minDist - dist;
+          const nx = dist > 0.001 ? dx / dist : (Math.random() < 0.5 ? 1 : -1);
+          const ny = dist > 0.001 ? dy / dist : (Math.random() < 0.5 ? 0.3 : -0.3);
+
+          const massA = a.mass || 20;
+          const massB = b.mass || 20;
+          const totalMass = Math.max(1, massA + massB);
+          const ratioA = massB / totalMass;
+          const ratioB = massA / totalMass;
+
+          // Мягкая коррекция координат без рывков
+          const pushFactor = 0.45;
+          a.x -= nx * overlap * ratioA * pushFactor;
+          a.y -= ny * overlap * ratioA * pushFactor;
+          b.x += nx * overlap * ratioB * pushFactor;
+          b.y += ny * overlap * ratioB * pushFactor;
+
+          // Плавный гидродинамический импульс
+          const impulse = Math.min(1.2, overlap * 0.04);
+          a.vx -= nx * impulse * ratioA;
+          a.vy -= ny * impulse * ratioA;
+          b.vx += nx * impulse * ratioB;
+          b.vy += ny * impulse * ratioB;
+        }
+      }
+    }
+  }
+
+  resolveNPCPredation() {
+    // Хищные NPC рыбы (акула, барракуда, крылатка, мегалодон или рыбы от 5 стадии) охотятся на меньших рыб
+    for (let i = 0; i < this.fishes.length; i++) {
+      const pred = this.fishes[i];
+      if (!pred) continue;
+
+      const isCarnivore = ['megalodon', 'shark', 'barracuda', 'lionfish'].includes(pred.species) || pred.stage >= 5;
+      if (!isCarnivore) continue;
+      if (pred.feedCooldown && pred.feedCooldown > 0) continue;
+
+      const predMouthX = pred.x + Math.cos(pred.angle) * (pred.radius * 0.85);
+      const predMouthY = pred.y + Math.sin(pred.angle) * (pred.radius * 0.85);
+      const eatRadius = pred.radius * 0.82;
+
+      // Ищем подходящую добычу среди других рыб
+      for (let j = this.fishes.length - 1; j >= 0; j--) {
+        if (i === j) continue;
+        const prey = this.fishes[j];
+        if (!prey) continue;
+
+        // Хищник может съесть рыбу, если превосходит ее по радиусу минимум в 1.2 раза
+        if (pred.radius >= prey.radius * 1.2) {
+          const mouthDist = Math.hypot(predMouthX - prey.x, predMouthY - prey.y);
+          if (mouthDist < eatRadius + prey.radius * 0.45) {
+            // Хищник заглатывает добычу!
+            pred.triggerChomp();
+            pred.feedCooldown = 180 + Math.floor(Math.random() * 120); // 3-5 секунд сытости
+
+            // Прирост массы и размера хищника
+            pred.mass = Math.min(pred.mass * 1.05, pred.mass + prey.mass * 0.4);
+            pred.radius = Math.min(pred.radius * 1.02, pred.radius + 0.35);
+
+            // Частицы укуса
+            const speciesInfo = (typeof REAL_SPECIES_PRESETS !== 'undefined' && REAL_SPECIES_PRESETS[prey.species]) || null;
+            const biteColor = (prey.colors && prey.colors.body) || (speciesInfo && speciesInfo.color) || '#ff5722';
+            this.spawnBiteParticles(prey.x, prey.y, biteColor);
+
+            // Удаляем съеденную рыбу из фауны
+            this.fishes.splice(j, 1);
+            if (j < i) i--;
+
+            break; // Хищник насытился одной добычей за раз
+          }
+        }
+      }
     }
   }
 

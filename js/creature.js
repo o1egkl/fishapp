@@ -267,6 +267,7 @@ class Fish {
     this.aiState = 'WANDER';
     this.aiChangeTimer = Math.random() * 90 + 60;
     this.wanderAngle = this.angle;
+    this.feedCooldown = options.feedCooldown !== undefined ? options.feedCooldown : Math.floor(Math.random() * 120);
 
     // Эффекты и щит неуязвимости
     this.hurtTimer = 0;
@@ -383,6 +384,7 @@ class Fish {
     if (this.hurtTimer > 0) this.hurtTimer--;
     if (this.evolutionGlow > 0) this.evolutionGlow -= 0.02;
     if (this.shieldTimer > 0) this.shieldTimer--;
+    if (this.feedCooldown > 0) this.feedCooldown--;
 
     // Регенерация энергии рывка для игрока
     if (this.isPlayer) {
@@ -426,30 +428,58 @@ class Fish {
     let wantsToFlee = false;
     let fleeX = 0;
     let fleeY = 0;
+    let closestThreatDist = 99999;
 
+    // 1. Оценка опасности от игрока
     if (distToPlayer < sightRange && player.radius > this.radius * 1.15) {
       wantsToFlee = true;
+      closestThreatDist = distToPlayer;
       fleeX = this.x - player.x;
       fleeY = this.y - player.y;
     }
 
+    // 2. Оценка опасности от других хищников среди NPC (акулы, барракуды, мегалодоны, крылатки или рыбы крупнее)
+    if (Array.isArray(otherFish)) {
+      for (let other of otherFish) {
+        if (!other || other === this) continue;
+        const isPred = ['megalodon', 'shark', 'barracuda', 'lionfish'].includes(other.species) || other.stage >= 5;
+        const isSignificantlyBigger = other.radius > this.radius * 1.2;
+        if (isPred && isSignificantlyBigger) {
+          const d = Math.hypot(this.x - other.x, this.y - other.y);
+          if (d < sightRange && d < closestThreatDist) {
+            wantsToFlee = true;
+            closestThreatDist = d;
+            fleeX = this.x - other.x;
+            fleeY = this.y - other.y;
+          }
+        }
+      }
+    }
+
+    // Реакция бегства от опасности (FLEE)
     if (wantsToFlee) {
       this.aiState = 'FLEE';
       // Убегаем в горизонтальном направлении с умеренным вертикальным уклонением
       const fleeDirX = Math.sign(fleeX) || (this.cruiseDir || 1);
       this.cruiseDir = fleeDirX;
-      const fleePitch = Math.max(-0.40, Math.min(0.40, fleeY / (Math.abs(fleeX) + 120)));
+      const fleePitch = Math.max(-0.45, Math.min(0.45, fleeY / (Math.abs(fleeX) + 120)));
       this.targetAngle = fleeDirX > 0 ? fleePitch : (fleePitch >= 0 ? Math.PI - fleePitch : -Math.PI - fleePitch);
-      const fleeSpeed = this.maxSpeed * 0.85;
-      this.vx += Math.cos(this.targetAngle) * (fleeSpeed * 0.04);
-      this.vy += Math.sin(this.targetAngle) * (fleeSpeed * 0.04);
+      const fleeSpeed = this.maxSpeed * 0.90;
+      this.vx += Math.cos(this.targetAngle) * (fleeSpeed * 0.045);
+      this.vy += Math.sin(this.targetAngle) * (fleeSpeed * 0.045);
       return;
     }
 
-    // Охота хищников: ТОЛЬКО настоящие хищные виды (барракуда, акула, мегалодон, крылатка) или хищники 5-8 стадий охотятся на игрока!
-    // Мирные рифовые рыбки (тетра, клоун, хирург, зебрасома) не нападают на игрока!
+    // Охота хищников: ТОЛЬКО настоящие хищные виды (барракуда, акула, мегалодон, крылатка) или хищники 5-8 стадий
+    // Мирные рифовые рыбки (тетра, клоун, хирург, зебрасома) не нападают на рыб
     const isPredatoryCarnivore = ['barracuda', 'shark', 'lionfish', 'megalodon'].includes(this.species) || this.stage >= 5;
-    if (isPredatoryCarnivore && distToPlayer < sightRange * 0.85 && this.radius > player.radius * 1.25 && (!player.shieldTimer || player.shieldTimer <= 0)) {
+
+    // А. Охота на игрока (если игрок меньше и не защищен щитом)
+    const canHuntPlayer = isPredatoryCarnivore && distToPlayer < sightRange * 0.85 && 
+                          this.radius > player.radius * 1.25 && 
+                          (!player.shieldTimer || player.shieldTimer <= 0);
+
+    if (canHuntPlayer) {
       this.aiState = 'CHASE';
       const chaseX = player.x - this.x;
       const chaseY = player.y - this.y;
@@ -463,6 +493,37 @@ class Fish {
       return;
     }
 
+    // Б. Охота на других NPC рыб (когда хищник голоден)
+    if (isPredatoryCarnivore && (!this.feedCooldown || this.feedCooldown <= 0) && Array.isArray(otherFish)) {
+      let closestPrey = null;
+      let minPreyDist = sightRange * 0.85;
+
+      for (let other of otherFish) {
+        if (!other || other === this) continue;
+        if (this.radius >= other.radius * 1.25) {
+          const d = Math.hypot(this.x - other.x, this.y - other.y);
+          if (d < minPreyDist) {
+            minPreyDist = d;
+            closestPrey = other;
+          }
+        }
+      }
+
+      if (closestPrey) {
+        this.aiState = 'CHASE';
+        const chaseX = closestPrey.x - this.x;
+        const chaseY = closestPrey.y - this.y;
+        const chaseDirX = Math.sign(chaseX) || (this.cruiseDir || 1);
+        this.cruiseDir = chaseDirX;
+        const chasePitch = Math.max(-0.40, Math.min(0.40, chaseY / (Math.abs(chaseX) + 100)));
+        this.targetAngle = chaseDirX > 0 ? chasePitch : (chasePitch >= 0 ? Math.PI - chasePitch : -Math.PI - chasePitch);
+        const huntSpeed = this.maxSpeed * 0.70;
+        this.vx += Math.cos(this.targetAngle) * (huntSpeed * 0.032);
+        this.vy += Math.sin(this.targetAngle) * (huntSpeed * 0.032);
+        return;
+      }
+    }
+
     // Спокойное ихтиологическое крейсирование: рыбы плавают преимущественно горизонтально (влево или вправо),
     // плавно покачиваясь по глубине (вверх/вниз не более ±18 градусов)
     if (this.aiChangeTimer <= 0) {
@@ -474,11 +535,30 @@ class Fish {
       this.wanderPitch = (Math.random() - 0.5) * 0.30;
     }
 
+    // Пространственное уклонение от других рыб при свободном плавании
+    // (предотвращает синхронное нагромождение и параллельный заплыв на одной глубине)
+    if (Array.isArray(otherFish)) {
+      for (let other of otherFish) {
+        if (!other || other === this) continue;
+        const combinedR = this.radius + other.radius;
+        const dx = other.x - this.x;
+        const dy = other.y - this.y;
+        const d = Math.hypot(dx, dy);
+
+        if (d < combinedR * 1.8) {
+          if (Math.abs(dy) < combinedR * 1.2) {
+            const steerY = (this.y >= other.y ? 0.06 : -0.06);
+            this.wanderPitch = (this.wanderPitch || 0) + steerY;
+          }
+        }
+      }
+    }
+
     // Отталкивание от верхней кромки (поверхности) и морского дна
     if (this.y < 250) {
-      this.wanderPitch = Math.abs(this.wanderPitch) + 0.15; // плавно уходим глубже
+      this.wanderPitch = Math.abs(this.wanderPitch || 0) + 0.15; // плавно уходим глубже
     } else if (this.y > 2100) {
-      this.wanderPitch = -Math.abs(this.wanderPitch) - 0.15; // плавно всплываем
+      this.wanderPitch = -Math.abs(this.wanderPitch || 0) - 0.15; // плавно всплываем
     }
 
     const currentPitch = Math.max(-0.35, Math.min(0.35, this.wanderPitch || 0));

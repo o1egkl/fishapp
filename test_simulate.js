@@ -250,6 +250,50 @@ try {
   game.render();
   console.log('Render executed cleanly with all transformations verified!');
 
+  // Test 6: Physical Separation Between Overlapping Fish
+  console.log('Testing physical separation between overlapping fish...');
+  const fishA = new Fish(500, 500, { species: 'shark', radius: 100, mass: 2000 });
+  const fishB = new Fish(510, 500, { species: 'shark', radius: 100, mass: 2000 });
+  game.fishes = [fishA, fishB];
+  const initialDist = Math.hypot(fishB.x - fishA.x, fishB.y - fishA.y);
+  game.resolveFishSeparation();
+  const separatedDist = Math.hypot(fishB.x - fishA.x, fishB.y - fishA.y);
+  console.log('  Fish separation: initial dist =', initialDist, '-> separated dist =', separatedDist.toFixed(2));
+  if (separatedDist <= initialDist) throw new Error('Fish should physically separate when overlapping!');
+  if (fishA.vx >= 0 || fishB.vx <= 0) throw new Error('Fish should receive repulsive velocity impulses!');
+
+  // Test 7: NPC-on-NPC Predation
+  console.log('Testing NPC-on-NPC predation...');
+  const predShark = new Fish(600, 600, { species: 'shark', radius: 130, mass: 3000, feedCooldown: 0, angle: 0 });
+  const preyFish = new Fish(670, 600, { species: 'clownfish', radius: 36, mass: 120 });
+  game.fishes = [predShark, preyFish];
+  const prePredCount = game.fishes.length;
+  game.resolveNPCPredation();
+  console.log('  NPC predation: fishes count before =', prePredCount, 'after =', game.fishes.length, 'pred chompTimer =', predShark.chompTimer);
+  if (game.fishes.length !== 1) throw new Error('Predator should have eaten prey fish!');
+  if (predShark.feedCooldown <= 0) throw new Error('Predator should enter feed cooldown after meal!');
+  if (predShark.chompTimer <= 0) throw new Error('Predator should trigger chomp animation on meal!');
+
+  // Test 8: AI Threat Awareness (Prey flees from nearby Apex Predator)
+  console.log('Testing NPC AI threat awareness...');
+  const apexMega = new Fish(800, 800, { species: 'megalodon', radius: 185, mass: 15000 });
+  const timidFish = new Fish(880, 800, { species: 'neontetra', radius: 24, mass: 15 });
+  timidFish.updateAI(game.player, [apexMega, timidFish], []);
+  console.log('  Prey AI state near Megalodon:', timidFish.aiState);
+  if (timidFish.aiState !== 'FLEE') throw new Error('Small fish should flee from nearby Megalodon!');
+
+  // Test 9: Apex Predator Population Caps & Spawn Spacing
+  console.log('Testing apex predator population caps in spawnRandomNPCFish...');
+  game.fishes = [];
+  for (let i = 0; i < 60; i++) {
+    game.spawnRandomNPCFish();
+  }
+  const megaCount = game.fishes.filter(f => f.species === 'megalodon').length;
+  const sharkCount = game.fishes.filter(f => f.species === 'shark').length;
+  console.log('  Spawned population of 60 fish: megalodon =', megaCount, '(max 1), shark =', sharkCount, '(max 2)');
+  if (megaCount > 1) throw new Error(`Megalodon count ${megaCount} exceeds cap of 1!`);
+  if (sharkCount > 2) throw new Error(`Shark count ${sharkCount} exceeds cap of 2!`);
+
   console.log('All tests passed without throwing any errors!');
 
 } catch (err) {
